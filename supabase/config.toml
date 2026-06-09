@@ -1,0 +1,4 @@
+project_id = "fmtjbfufuprkfwneokuk"
+
+[functions.osint-report]
+verify_jwt = false
