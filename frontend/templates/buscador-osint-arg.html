@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscador OSINT Argentina — Diagonales Intelligence</title>
+<style>
+:root {
+  --bg: #f6f8fb; --ink: #182230; --muted: #667085; --line: #d9e2ec;
+  --panel: #ffffff; --accent: #155eef; --accent2: #0e9384; --danger: #b42318;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: Inter, sans-serif; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+header { padding: 20px 0; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+h1 { margin: 0 0 5px; font-size: 2em; }
+.subtitle { margin: 0; color: var(--muted); font-size: 0.95em; }
+.grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; }
+input, select { width: 100%; height: 40px; border: 1px solid var(--line); border-radius: 6px; padding: 0 10px; margin-bottom: 10px; font-size: 0.9em; }
+input:focus, select:focus { outline: 2px solid #bfd7ff; border-color: var(--accent); }
+label { display: block; font-weight: 600; margin: 15px 0 5px; font-size: 0.9em; }
+button { background: var(--accent); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; margin: 5px 5px 5px 0; }
+button:hover { opacity: 0.9; }
+.secondary { background: #f2f4f7; color: var(--ink); border: 1px solid var(--line); }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px; }
+.tab { padding: 8px 12px; border: 1px solid var(--line); background: #f8fafc; cursor: pointer; border-radius: 6px; }
+.tab.active { background: var(--accent); color: white; }
+.results { display: grid; gap: 12px; }
+.result-card { background: white; border: 1px solid var(--line); border-radius: 6px; padding: 12px; }
+.result-card h3 { margin: 0 0 8px; font-size: 1em; }
+.links { display: grid; gap: 6px; }
+.link-item { padding: 8px; background: #f8fafc; border-radius: 6px; border: 1px solid #eef2f6; }
+.link-item a { color: var(--accent); text-decoration: none; word-break: break-all; font-size: 0.85em; }
+.link-item a:hover { text-decoration: underline; }
+.empty { color: var(--muted); padding: 30px; text-align: center; }
+.footnote { color: var(--muted); font-size: 0.8em; margin-top: 10px; }
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🔍 Buscador OSINT Argentina</h1>
+    <p class="subtitle">Búsquedas integradas en boletines, registros y fuentes públicas argentinas</p>
+  </header>
+
+  <div class="grid">
+    <!-- SIDEBAR BÚSQUEDA -->
+    <aside class="panel">
+      <label for="consulta">Nombre / Empresa / DNI / CUIT</label>
+      <input id="consulta" placeholder="Ej: Javier Milei">
+
+      <label for="provincia">Provincia</label>
+      <select id="provincia">
+        <option value="">Todas</option>
+        <option value="CABA">CABA</option>
+        <option value="Buenos Aires">Buenos Aires</option>
+        <option value="Córdoba">Córdoba</option>
+        <option value="Santa Fe">Santa Fe</option>
+        <option value="Mendoza">Mendoza</option>
+        <option value="Tucumán">Tucumán</option>
+        <option value="Salta">Salta</option>
+        <option value="Chaco">Chaco</option>
+        <option value="Misiones">Misiones</option>
+        <option value="Corrientes">Corrientes</option>
+        <option value="Entre Ríos">Entre Ríos</option>
+        <option value="Formosa">Formosa</option>
+        <option value="Jujuy">Jujuy</option>
+        <option value="La Pampa">La Pampa</option>
+        <option value="La Rioja">La Rioja</option>
+        <option value="Neuquén">Neuquén</option>
+        <option value="Río Negro">Río Negro</option>
+        <option value="San Juan">San Juan</option>
+        <option value="San Luis">San Luis</option>
+        <option value="Santa Cruz">Santa Cruz</option>
+        <option value="Santiago del Estero">Santiago del Estero</option>
+        <option value="Tierra del Fuego">Tierra del Fuego</option>
+        <option value="Chubut">Chubut</option>
+        <option value="Catamarca">Catamarca</option>
+      </select>
+
+      <label for="tipo">Tipo de búsqueda</label>
+      <select id="tipo">
+        <option value="general">General</option>
+        <option value="judicial">Judicial</option>
+        <option value="patrimonial">Patrimonial/Licitaciones</option>
+        <option value="crediticia">Crediticia (BCRA)</option>
+        <option value="societaria">Sociedades (BORA)</option>
+        <option value="legisladores">Legisladores</option>
+      </select>
+
+      <button onclick="buscar()">🔍 Buscar</button>
+      <button class="secondary" onclick="abrirTodos()">Abrir todos</button>
+      <button class="secondary" onclick="limpiar()">Limpiar</button>
+
+      <p class="footnote">Genera búsquedas directas en boletines oficiales, registros y juzgados de Argentina.</p>
+    </aside>
+
+    <!-- RESULTADOS -->
+    <main class="panel">
+      <div class="tabs" id="tabs"></div>
+      <div id="resultados" class="results">
+        <div class="empty">Ingresá una consulta y presioná Buscar</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const FUENTES = {
+  nacional: {
+    bora: 'https://www.boletinoficial.gob.ar',
+    bcra: 'https://www.bcra.gob.ar/BCRAyVos/Situacion_Crediticia.asp',
+    anses: 'https://www.anses.gob.ar',
+    arca: 'https://www.arca.gob.ar',
+    igj: 'https://www.argentina.gob.ar/justicia/igj',
+    pjn: 'https://www.pjn.gov.ar',
+    csjn: 'https://www.csjn.gov.ar',
+    diputados: 'https://www.diputados.gov.ar/diputados',
+    senado: 'https://www.senado.gob.ar/senadores/listado/completo',
+  },
+  provinciales: {
+    'CABA': { bora: 'https://boletinoficial.buenosaires.gob.ar', legisladores: 'https://www.legislatura.gob.ar/posts/legisladores' },
+    'Buenos Aires': { bora: 'https://boletinoficial.gba.gob.ar', diputados: 'https://www.hcdiputados-ba.gov.ar', senadores: 'https://www.senado-ba.gov.ar' },
+    'Córdoba': { bora: 'https://boletinoficial.cba.gov.ar', legisladores: 'https://legislaturacba.gob.ar/legisladores' },
+    'Santa Fe': { bora: 'https://www.santafe.gob.ar/boletinoficial', diputados: 'https://www.diputadossantafe.gov.ar', senadores: 'https://www.senadosantafe.gob.ar' },
+    'Mendoza': { bora: 'https://boletinoficial.mendoza.gov.ar', diputados: 'https://www.hcdmza.gob.ar', senadores: 'https://www.senadomendoza.gob.ar' },
+    'Tucumán': { bora: 'https://boletin.tucuman.gov.ar', legisladores: 'https://www.legislaturadetucuman.gob.ar' },
+    'Salta': { bora: 'https://boletinoficialsalta.gob.ar', diputados: 'https://www.diputadosalta.gob.ar', senadores: 'https://www.senadosalta.gob.ar' },
+    'Chaco': { bora: 'https://boletin.chaco.gob.ar', diputados: 'https://legislaturachaco.gov.ar' },
+    'Misiones': { bora: 'https://www.boletin.misiones.gov.ar', legisladores: 'https://www.diputadosmisiones.gov.ar' },
+    'Corrientes': { bora: 'https://boletinoficial.corrientes.gob.ar', diputados: 'https://hcddcorrientes.gov.ar', senadores: 'https://hcsenado.gov.ar' },
+    'Entre Ríos': { bora: 'https://www.entrerios.gov.ar/boletin', diputados: 'https://hcde.gov.ar', senadores: 'https://senadoer.gob.ar' },
+    'Formosa': { bora: 'https://www.formosa.gob.ar/boletinoficial', diputados: 'https://www.legislaturaformosa.gob.ar' },
+    'Jujuy': { bora: 'https://boletinoficial.jujuy.gob.ar', diputados: 'https://www.legislaturajujuy.gov.ar' },
+    'La Pampa': { bora: 'https://boletinoficial.lapampa.gob.ar', diputados: 'https://camaradediputados.lapampa.gob.ar' },
+    'La Rioja': { bora: 'https://www.boletinoflarioja.com.ar', legisladores: 'https://www.legislaturalarioja.gob.ar' },
+    'Neuquén': { bora: 'https://boletinoficial.neuquen.gov.ar', diputados: 'https://www.legislaturaneuquen.gob.ar' },
+    'Río Negro': { bora: 'https://boletinoficial.rionegro.gov.ar', legisladores: 'https://legisrn.gov.ar/web' },
+    'San Juan': { bora: 'https://boletinoficial.sanjuan.gob.ar', diputados: 'https://diputadosanjuan.gob.ar' },
+    'San Luis': { bora: 'https://boletinoficial.sanluis.gob.ar', diputados: 'https://diputados.sanluis.gov.ar', senadores: 'https://senado.sanluis.gov.ar' },
+    'Santa Cruz': { bora: 'https://boletinoficial.santacruz.gob.ar', diputados: 'https://www.legislaturasantacruz.gob.ar' },
+    'Santiago del Estero': { bora: 'https://www.boletinsde.gov.ar', legisladores: 'https://www.legislaturasde.gob.ar' },
+    'Tierra del Fuego': { bora: 'https://www.tierradelfuego.gob.ar/boletin-oficial', legisladores: 'https://legistdf.gob.ar' },
+    'Chubut': { bora: 'https://boletin.chubut.gov.ar', diputados: 'https://www.legischubut.gov.ar' },
+    'Catamarca': { bora: 'https://portal.catamarca.gob.ar/boletin', diputados: 'https://www.diputados-catamarca.gov.ar', senadores: 'https://www.senadocatamarca.gob.ar' },
+  }
+};
+
+const state = { data: null, links: [] };
+
+function buscar() {
+  const consulta = document.getElementById('consulta').value.trim();
+  const provincia = document.getElementById('provincia').value;
+  const tipo = document.getElementById('tipo').value;
+
+  if (!consulta) { alert('Ingresá una búsqueda'); return; }
+
+  const links = generarLinks(consulta, provincia, tipo);
+  state.links = links;
+  mostrarResultados(links, tipo);
+}
+
+function generarLinks(q, prov, tipo) {
+  const links = [];
+  const googleQuery = encodeURIComponent(q + (prov ? ` ${prov}` : ''));
+
+  // GENERAL
+  if (tipo === 'general' || tipo === 'general') {
+    links.push({ cat: 'General', url: `https://www.google.com/search?q=${googleQuery}`, label: 'Google' });
+    links.push({ cat: 'General', url: `https://news.google.com/search?q=${googleQuery}`, label: 'Google News' });
+    links.push({ cat: 'General', url: `https://x.com/search?q=${encodeURIComponent(q)}`, label: 'X/Twitter' });
+    links.push({ cat: 'General', url: `https://www.instagram.com/explore/search?q=${q.replace(/\s/g, '')}`, label: 'Instagram' });
+    links.push({ cat: 'General', url: `https://www.linkedin.com/search/results/all/?keywords=${googleQuery}`, label: 'LinkedIn' });
+  }
+
+  // JUDICIAL
+  if (tipo === 'general' || tipo === 'judicial') {
+    links.push({ cat: 'Judicial', url: 'https://www.pjn.gov.ar', label: 'PJN - Poder Judicial Nación' });
+    links.push({ cat: 'Judicial', url: 'https://www.csjn.gov.ar', label: 'CSJN' });
+    links.push({ cat: 'Judicial', url: `https://www.google.com/search?q=site:pjn.gov.ar "${q}"`, label: 'Búsqueda PJN (Google)' });
+    links.push({ cat: 'Judicial', url: `https://www.google.com/search?q=site:csjn.gov.ar "${q}"`, label: 'Búsqueda CSJN (Google)' });
+    if (prov === 'CABA') links.push({ cat: 'Judicial', url: 'https://www.jusbaires.gob.ar', label: 'Juzgados CABA' });
+  }
+
+  // PATRIMONIAL/LICITACIONES
+  if (tipo === 'general' || tipo === 'patrimonial') {
+    links.push({ cat: 'Patrimonial', url: 'https://www.compras.gob.ar', label: 'Compras.gob.ar' });
+    links.push({ cat: 'Patrimonial', url: 'https://www.boletinoficial.gob.ar/seccion/segunda', label: 'Boletín Oficial - Sociedades' });
+    links.push({ cat: 'Patrimonial', url: `https://www.google.com/search?q=site:boletinoficial.gob.ar "${q}" licitacion`, label: 'Licitaciones BORA' });
+    links.push({ cat: 'Patrimonial', url: 'https://www.argentina.gob.ar/justicia/registro-nacional-sociedades', label: 'Registro Nac. Sociedades' });
+  }
+
+  // CREDITICIA
+  if (tipo === 'general' || tipo === 'crediticia') {
+    links.push({ cat: 'BCRA', url: 'https://www.bcra.gob.ar/BCRAyVos/Situacion_Crediticia.asp', label: 'BCRA - Central de Deudores' });
+    links.push({ cat: 'BCRA', url: 'https://www.bcra.gob.ar/BCRAyVos/Central-de-cheques-rechazados.asp', label: 'BCRA - Cheques Rechazados' });
+  }
+
+  // SOCIETARIA
+  if (tipo === 'general' || tipo === 'societaria') {
+    links.push({ cat: 'Sociedades', url: 'https://www.boletinoficial.gob.ar', label: 'Boletín Oficial (BORA)' });
+    links.push({ cat: 'Sociedades', url: 'https://timeline.boletinoficial.gob.ar', label: 'Timeline Societario BORA' });
+    links.push({ cat: 'Sociedades', url: `https://www.google.com/search?q=site:boletinoficial.gob.ar "${q}" sociedad`, label: 'Búsqueda Sociedades' });
+  }
+
+  // LEGISLADORES
+  if (tipo === 'general' || tipo === 'legisladores') {
+    links.push({ cat: 'Legisladores', url: 'https://www.diputados.gov.ar/diputados', label: 'Diputados Nacionales' });
+    links.push({ cat: 'Legisladores', url: 'https://www.senado.gob.ar/senadores/listado/completo', label: 'Senadores Nacionales' });
+    links.push({ cat: 'Legisladores', url: 'https://directoriodirecto.org', label: 'Directorio Legislativo' });
+  }
+
+  // PROVINCIAL
+  if (prov && FUENTES.provinciales[prov]) {
+    const pf = FUENTES.provinciales[prov];
+    if (pf.bora) links.push({ cat: 'Provincial', url: pf.bora, label: `Boletín Oficial ${prov}` });
+    if (pf.diputados) links.push({ cat: 'Provincial', url: pf.diputados, label: `Diputados ${prov}` });
+    if (pf.senadores) links.push({ cat: 'Provincial', url: pf.senadores, label: `Senadores ${prov}` });
+    if (pf.legisladores) links.push({ cat: 'Provincial', url: pf.legisladores, label: `Legisladores ${prov}` });
+  }
+
+  // ARCA / ANSES
+  links.push({ cat: 'Fiscales', url: 'https://www.arca.gob.ar', label: 'ARCA (AFIP)' });
+  links.push({ cat: 'Fiscales', url: 'https://www.anses.gob.ar', label: 'ANSES' });
+
+  return links;
+}
+
+function mostrarResultados(links, tipo) {
+  const por_cat = {};
+  links.forEach(l => {
+    if (!por_cat[l.cat]) por_cat[l.cat] = [];
+    por_cat[l.cat].push(l);
+  });
+
+  let tabs = '<button class="tab active" data-cat="todos" onclick="filtrarTab(\'todos\')">Todos</button>';
+  Object.keys(por_cat).forEach(c => {
+    tabs += `<button class="tab" data-cat="${c}" onclick="filtrarTab('${c}')">${c}</button>`;
+  });
+  document.getElementById('tabs').innerHTML = tabs;
+
+  let html = '';
+  Object.entries(por_cat).forEach(([cat, items]) => {
+    html += `<div class="tab-content" data-cat="${cat}">`;
+    items.forEach(link => {
+      html += `<div class="result-card"><h3>${link.label}</h3><a href="${link.url}" target="_blank">${link.url.substring(0, 80)}...</a></div>`;
+    });
+    html += '</div>';
+  });
+
+  document.getElementById('resultados').innerHTML = html;
+  filtrarTab('todos');
+}
+
+function filtrarTab(cat) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-cat="${cat}"]`).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+  if (cat === 'todos') {
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'grid');
+  } else {
+    document.querySelector(`[data-cat="${cat}"].tab-content`).style.display = 'grid';
+  }
+}
+
+function abrirTodos() {
+  state.links.forEach(l => window.open(l.url, '_blank'));
+}
+
+function limpiar() {
+  document.getElementById('consulta').value = '';
+  document.getElementById('resultados').innerHTML = '<div class="empty">Ingresá una consulta y presioná Buscar</div>';
+  state.links = [];
+}
+
+// Estilos dinámicos
+const style = document.createElement('style');
+style.textContent = `.tab-content { display: grid; gap: 12px; }`;
+document.head.appendChild(style);
+</script>
+
+</body>
+</html>
