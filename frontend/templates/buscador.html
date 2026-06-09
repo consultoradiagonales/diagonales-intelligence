@@ -143,6 +143,7 @@ button, .button {
         <button class="tab" data-tab="patrimoniales" onclick="setTab('patrimoniales')">Patrimonial</button>
         <button class="tab" data-tab="redes_sociales" onclick="setTab('redes_sociales')">Redes</button>
         <button class="tab" data-tab="medios" onclick="setTab('medios')">Medios</button>
+        <button class="tab" data-tab="fuentes" onclick="setTab('fuentes')">Fuentes oficiales</button>
       </div>
 
       <div class="summary" id="summary">
@@ -175,6 +176,103 @@ function googleUrl(q) {
   return 'https://www.google.com/search?q=' + encodeURIComponent(q);
 }
 
+const SOURCE_CATALOG = [
+  ['BORA - Busqueda avanzada', 'boletines', 'https://www.boletinoficial.gob.ar/busquedaAvanzada/all'],
+  ['BORA - Segunda Seccion sociedades', 'boletines', 'https://www.boletinoficial.gob.ar/seccion/segunda'],
+  ['BORA - Timeline societario', 'sociedades', 'https://timeline.boletinoficial.gob.ar/'],
+  ['Registro Nacional de Sociedades', 'sociedades', 'https://www.argentina.gob.ar/justicia/registro-nacional-sociedades'],
+  ['Registros locales RNS', 'sociedades', 'https://www.argentina.gob.ar/justicia/registro-nacional-sociedades/registros-locales'],
+  ['IGJ', 'sociedades', 'https://www.argentina.gob.ar/justicia/igj'],
+  ['ARCA constancia CUIT', 'fiscal', 'https://seti.arca.gob.ar/padron-puc-constancia-internet/ConsultaConstanciaAction.do'],
+  ['ARCA', 'fiscal', 'https://www.arca.gob.ar/'],
+  ['BCRA situacion crediticia', 'financiero', 'https://www.bcra.gob.ar/BCRAyVos/Situacion_Crediticia.asp'],
+  ['BCRA cheques rechazados', 'financiero', 'https://www.bcra.gob.ar/BCRAyVos/Central-de-cheques-rechazados.asp'],
+  ['SSSalud', 'laboral', 'https://www.sssalud.gob.ar/'],
+  ['ANSES', 'laboral', 'https://www.anses.gob.ar/'],
+  ['SRT', 'laboral', 'https://www.srt.gob.ar/'],
+  ['Infoleg boletines', 'normativa', 'https://www.argentina.gob.ar/normativa/buscar-boletin'],
+  ['Padron gobiernos locales', 'municipios', 'https://www.argentina.gob.ar/interior/secretaria-de-provincias-y-municipios/padron-de-gobiernos-locales'],
+  ['IGN division politico administrativa', 'municipios', 'https://www.ign.gob.ar/NuestrasActividades/Geografia/DatosArgentina/DivisionPoliticoAdministrativa'],
+  ['Mapa del Estado', 'funcionarios', 'https://www.argentina.gob.ar/jefatura/mapa-del-estado'],
+  ['Diputados Nacion', 'legisladores', 'https://www.diputados.gov.ar/diputados/'],
+  ['Datos HCDN composicion', 'legisladores', 'https://datos.hcdn.gob.ar/dataset/composicion-de-la-honorable-camara-de-diputados'],
+  ['Senado listado completo', 'legisladores', 'https://www.senado.gob.ar/senadores/listado/completo'],
+  ['Senado datos abiertos', 'legisladores', 'https://www.senado.gob.ar/micrositios/DatosAbiertos/'],
+  ['Directorio Legislativo', 'legisladores', 'https://directoriodirecto.org/'],
+  ['Argentina Datos', 'datos', 'https://argentinadatos.com/'],
+  ['Red de Boletines Oficiales', 'boletines', 'http://www.reddeboletines.gob.ar/'],
+  ['Boletin Buenos Aires', 'boletines', 'https://boletinoficial.gba.gob.ar/'],
+  ['DPPJ Buenos Aires', 'sociedades', 'https://www.gba.gob.ar/dppj'],
+  ['Boletin CABA', 'boletines', 'https://boletinoficial.buenosaires.gob.ar/'],
+  ['Boletin Catamarca', 'boletines', 'https://portal.catamarca.gob.ar/boletin/'],
+  ['Boletin Chaco', 'boletines', 'https://boletin.chaco.gob.ar/'],
+  ['Personas Juridicas Chaco', 'sociedades', 'https://personasjuridicas.chaco.gov.ar'],
+  ['Boletin Chubut', 'boletines', 'https://boletin.chubut.gov.ar/'],
+  ['Boletin Cordoba', 'boletines', 'https://boletinoficial.cba.gov.ar/'],
+  ['IPJ Cordoba', 'sociedades', 'https://ipj.cba.gov.ar/'],
+  ['Boletin Corrientes', 'boletines', 'https://boletinoficial.corrientes.gob.ar/'],
+  ['Boletin Entre Rios', 'boletines', 'https://www.entrerios.gov.ar/boletin/'],
+  ['Personas Juridicas Entre Rios', 'sociedades', 'https://portal.entrerios.gov.ar/seguridadyjusticia/personasjuridicas/inicio'],
+  ['Boletin Formosa', 'boletines', 'https://www.formosa.gob.ar/boletinoficial'],
+  ['Personas Juridicas Formosa', 'sociedades', 'https://www.formosa.gob.ar/personasjuridicas'],
+  ['Boletin Jujuy', 'boletines', 'https://boletinoficial.jujuy.gob.ar/'],
+  ['Boletin La Pampa', 'boletines', 'https://boletinoficial.lapampa.gob.ar/'],
+  ['Personas Juridicas La Pampa', 'sociedades', 'https://dgpersonasjuridicas.lapampa.gob.ar/'],
+  ['Boletin La Rioja', 'boletines', 'https://www.boletinoflarioja.com.ar/'],
+  ['Boletin Mendoza', 'boletines', 'https://boletinoficial.mendoza.gov.ar/'],
+  ['DPJ Mendoza', 'sociedades', 'https://atencionciudadana.mendoza.gob.ar/dpj/'],
+  ['Boletin Misiones', 'boletines', 'https://www.boletin.misiones.gov.ar/'],
+  ['Personas Juridicas Misiones', 'sociedades', 'https://personasjuridicas.misiones.gob.ar/'],
+  ['Boletin Neuquen', 'boletines', 'https://boletinoficial.neuquen.gov.ar/'],
+  ['Personas Juridicas Neuquen', 'sociedades', 'https://personasjuridicas.neuquen.gov.ar/'],
+  ['Boletin Rio Negro', 'boletines', 'https://boletinoficial.rionegro.gov.ar/'],
+  ['Personas Juridicas Rio Negro', 'sociedades', 'https://personasjuridicas.rionegro.gov.ar/'],
+  ['Boletin Salta', 'boletines', 'https://boletinoficialsalta.gob.ar/'],
+  ['Personas Juridicas Salta', 'sociedades', 'https://personasjuridicas.salta.gob.ar/'],
+  ['Boletin San Juan', 'boletines', 'https://boletinoficial.sanjuan.gob.ar/'],
+  ['Boletin San Luis', 'boletines', 'https://boletinoficial.sanluis.gov.ar/'],
+  ['Boletin Santa Cruz', 'boletines', 'https://boletinoficial.santacruz.gob.ar/'],
+  ['Boletin Santa Fe', 'boletines', 'https://www.santafe.gob.ar/boletinoficial/'],
+  ['Boletin Santiago del Estero', 'boletines', 'https://www.boletinsde.gov.ar/'],
+  ['Boletin Tierra del Fuego', 'boletines', 'https://www.tierradelfuego.gob.ar/boletin-oficial/'],
+  ['Boletin Tucuman', 'boletines', 'https://boletin.tucuman.gov.ar/'],
+  ['Legislatura CABA', 'legisladores', 'https://www.legislatura.gob.ar/posts/legisladores'],
+  ['Diputados PBA', 'legisladores', 'https://www.hcdiputados-ba.gov.ar/'],
+  ['Senado PBA', 'legisladores', 'https://www.senado-ba.gov.ar/'],
+  ['Legislatura Cordoba', 'legisladores', 'https://legislaturacba.gob.ar/legisladores/'],
+  ['Legislatura Chaco', 'legisladores', 'https://legislaturachaco.gov.ar/'],
+  ['Legislatura Santa Fe Diputados', 'legisladores', 'https://www.diputadossantafe.gov.ar/'],
+  ['Senado Santa Fe', 'legisladores', 'http://www.senadosantafe.gob.ar/'],
+  ['GitHub politicos redes', 'datos', 'https://github.com/search?q=politicos+argentina+redes+sociales'],
+  ['X listas politicos Argentina', 'redes', 'https://x.com/search?q=politicos%20argentina&src=typed_query&f=list'],
+  ['Clarin', 'medios', 'https://www.clarin.com/'],
+  ['La Nacion', 'medios', 'https://www.lanacion.com.ar/'],
+  ['Pagina 12', 'medios', 'https://www.pagina12.com.ar/'],
+  ['Infobae', 'medios', 'https://www.infobae.com/'],
+  ['Ambito', 'medios', 'https://www.ambito.com/'],
+  ['Perfil', 'medios', 'https://www.perfil.com/'],
+  ['Cronista', 'medios', 'https://www.cronista.com/'],
+  ['TN YouTube', 'youtube', 'https://www.youtube.com/@todonoticias'],
+  ['C5N YouTube', 'youtube', 'https://www.youtube.com/@c5n'],
+  ['El Destape YouTube', 'youtube', 'https://www.youtube.com/@eldestapetv'],
+  ['La Derecha Diario YouTube', 'youtube', 'https://www.youtube.com/@LaDerechaDiario'],
+  ['Gelatina YouTube', 'youtube', 'https://www.youtube.com/@Gelatina'],
+  ['Blender YouTube', 'youtube', 'https://www.youtube.com/@estoesblender']
+].map(([titulo, grupo, url]) => ({ titulo, grupo, url }));
+
+function domainOf(url) {
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; }
+}
+
+function sourceSearchLinks(consulta) {
+  const quoted = `"${consulta}"`;
+  return SOURCE_CATALOG.map(src => ({
+    text: `${src.titulo} - ${src.grupo}`,
+    url: googleUrl(`site:${domainOf(src.url)} ${quoted}`),
+    direct: src.url
+  }));
+}
+
 function fallbackData(consulta, tipo, identificador) {
   const quoted = `"${consulta}"`;
   const base = identificador ? `${quoted} OR "${identificador}"` : quoted;
@@ -197,6 +295,7 @@ function fallbackData(consulta, tipo, identificador) {
       { titulo: 'Boletín Oficial', url: googleUrl(`site:boletinoficial.gob.ar ${quoted}`), tipo: 'argentina' },
       { titulo: 'Poder Judicial', url: googleUrl(`site:pjn.gov.ar ${quoted}`), tipo: 'judicial' }
     ],
+    fuentes: sourceSearchLinks(consulta),
     modo: 'Web'
   };
 }
@@ -265,7 +364,7 @@ function render() {
   const data = state.data;
   if (!data) return;
   const dorks = allDorks(data).filter(x => state.tab === 'todos' || x.cat === state.tab);
-  state.links = [...(data.enlaces || []).map(x => x.url), ...dorks.map(x => x.url)];
+  state.links = [...(data.enlaces || []).map(x => x.url), ...(data.fuentes || []).map(x => x.url), ...dorks.map(x => x.url)];
 
   $('summary').innerHTML = `
     <div class="metric"><span>Consulta</span><strong>${escapeHtml(data.consulta)}</strong></div>
@@ -277,6 +376,9 @@ function render() {
   const cards = [];
   if (state.tab === 'todos') {
     cards.push(card('Accesos directos', 'fuentes', (data.enlaces || []).map(x => ({ text: x.titulo, url: x.url }))));
+  }
+  if (state.tab === 'todos' || state.tab === 'fuentes') {
+    cards.push(card('Busquedas en fuentes oficiales y medios', 'catalogo', (data.fuentes || []).map(x => ({ text: x.text, url: x.url, direct: x.direct }))));
   }
   const grouped = dorks.reduce((acc, item) => {
     (acc[item.cat] ||= []).push({ text: item.q, url: item.url });
@@ -290,7 +392,7 @@ function card(title, badge, items) {
   return `<article class="card">
     <div class="card-head"><h3>${escapeHtml(title)}</h3><span class="badge">${escapeHtml(badge)}</span></div>
     <div class="link-list">
-      ${items.map(item => `<div class="link-item"><div class="query">${escapeHtml(item.text)}</div><a class="open" href="${item.url}" target="_blank" rel="noopener">Abrir</a></div>`).join('')}
+      ${items.map(item => `<div class="link-item"><div class="query">${escapeHtml(item.text)}</div><span><a class="open" href="${item.url}" target="_blank" rel="noopener">Buscar</a>${item.direct ? ` &nbsp; <a class="open" href="${item.direct}" target="_blank" rel="noopener">Sitio</a>` : ''}</span></div>`).join('')}
     </div>
   </article>`;
 }
