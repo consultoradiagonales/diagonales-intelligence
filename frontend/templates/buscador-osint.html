@@ -100,12 +100,11 @@ a { color:var(--blue); }
 
 <script>
 let informe = null;
-const DEFAULT_API_BASE = 'https://diagonales-intelligence-api.onrender.com';
+const DEFAULT_API_BASE = 'https://fmtjbfufuprkfwneokuk.supabase.co/functions/v1/osint-report';
 const $ = id => document.getElementById(id);
 
 function apiRoot() {
   if (location.hostname.includes('github.io')) return DEFAULT_API_BASE;
-  if (!location.hostname.includes('github.io') && location.origin.startsWith('http')) return location.origin;
   return DEFAULT_API_BASE;
 }
 
@@ -121,7 +120,7 @@ async function generarInforme() {
     tipo: $('tipo').value
   };
   if (!payload.nombre && !payload.identificador) { alert('Ingrese nombre, DNI, CUIL o CUIT'); return; }
-  const res = await fetch(root + '/api/informe/comercial', {
+  const res = await fetch(root, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify(payload)
