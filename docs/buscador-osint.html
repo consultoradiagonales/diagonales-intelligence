@@ -111,9 +111,7 @@ async function generarInforme() {
   $('metrics').innerHTML = metricHtml('-', '-', '-', 'consultando');
   const identificador = $('identificador').value.trim();
   const payload = {
-    nombre: identificador,
     identificador: identificador || null,
-    provincia: null,
     tipo: $('tipo').value
   };
   if (!payload.identificador) { alert('Ingrese DNI, CUIL o CUIT'); return; }
