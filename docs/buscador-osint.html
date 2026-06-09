@@ -47,14 +47,12 @@ a { color:var(--blue); }
 <div class="wrap">
   <header>
     <h1>Informe OSINT Diagonales</h1>
-    <p>Consulta fuentes abiertas, verifica coincidencias y arma un grafo de evidencia. Requiere API FastAPI desplegada para buscar de verdad.</p>
+    <p>Consulta fuentes abiertas, verifica coincidencias y arma un grafo de evidencia.</p>
   </header>
 
   <div class="grid">
     <aside class="panel">
       <h2>Consulta</h2>
-      <label>Nombre completo / razon social</label>
-      <input id="nombre" placeholder="Opcional si ingresa DNI / CUIL / CUIT">
       <label>DNI / CUIL / CUIT</label>
       <input id="identificador" placeholder="Ingrese DNI, CUIL o CUIT">
       <label>Tipo</label>
@@ -68,7 +66,7 @@ a { color:var(--blue); }
       </select>
       <button onclick="generarInforme()">Generar informe</button>
       <button class="secondary" onclick="exportarJSON()">Exportar JSON</button>
-      <p class="note">Ingrese nombre, DNI, CUIL o CUIT. El sistema consulta la API de Diagonales y arma el informe con evidencias.</p>
+      <p class="note">Ingrese DNI, CUIL o CUIT. El sistema consulta fuentes públicas y arma el informe con evidencias.</p>
     </aside>
 
     <main class="panel">
@@ -111,23 +109,32 @@ function apiRoot() {
 async function generarInforme() {
   const root = apiRoot();
   $('metrics').innerHTML = metricHtml('-', '-', '-', 'consultando');
-  const nombre = $('nombre').value.trim();
   const identificador = $('identificador').value.trim();
   const payload = {
-    nombre: nombre || identificador,
+    nombre: identificador,
     identificador: identificador || null,
     provincia: null,
     tipo: $('tipo').value
   };
-  if (!payload.nombre && !payload.identificador) { alert('Ingrese nombre, DNI, CUIL o CUIT'); return; }
-  const res = await fetch(root, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload)
-  });
-  if (!res.ok) throw new Error(await res.text());
-  informe = await res.json();
-  renderInforme();
+  if (!payload.identificador) { alert('Ingrese DNI, CUIL o CUIT'); return; }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45000);
+  try {
+    const res = await fetch(root, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    if (!res.ok) throw new Error(await res.text());
+    informe = await res.json();
+    renderInforme();
+  } catch (err) {
+    $('metrics').innerHTML = metricHtml('-', '-', '-', 'error');
+    $('resumen').innerHTML = `<div class="card"><h3>No se pudo completar la consulta</h3><p>${esc(err.message || err)}</p></div>`;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function metricHtml(fuentes, evidencias, riesgo, estado) {

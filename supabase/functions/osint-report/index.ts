@@ -172,7 +172,10 @@ async function consultarBcra(id: string) {
   const out: any = { identificacion: id, estado: "sin_datos", deudas: [], historico: [], cheques_rechazados: [] };
   for (const [key, path] of [["deudas", "Deudas"], ["historico", "DeudasHistoricas"], ["cheques_rechazados", "ChequesRechazados"]] as const) {
     try {
-      const r = await fetch(`${base}/${path}/${id}`, { headers: { Accept: "application/json" } });
+      const r = await fetch(`${base}/${path}/${id}`, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(7000),
+      });
       if (r.status === 404) { if (key === "deudas") out.estado = "sin_deudas"; continue; }
       if (!r.ok) continue;
       const data = await r.json();
