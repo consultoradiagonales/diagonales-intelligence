@@ -43,25 +43,37 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const body = await req.json();
-    const nombre = String(body.nombre || body.identificador || "").trim();
+    const nombreIngresado = String(body.nombre || "").trim();
     const identificador = String(body.identificador || "").replace(/\D/g, "");
-    if (!nombre && !identificador) return json({ error: "Ingrese nombre, DNI, CUIL o CUIT" }, 400);
+    if (!nombreIngresado && !identificador) return json({ error: "Ingrese DNI, CUIL o CUIT" }, 400);
 
     const normalizado = normalizeId(identificador);
     const cuiles = normalizado.cuils_derivados || [];
-    const bcra = await Promise.all(cuiles.slice(0, 3).map(consultarBcra));
-    const evidencias = [
-      ...bcra.map((b) => ({
+    const bcra = [];
+    for (const cuil of cuiles.slice(0, 3)) {
+      bcra.push(await consultarBcra(cuil));
+      if (bcra.some((b) => b.denominacion)) break;
+    }
+    const nombreBcra = firstNonEmpty(bcra.map((b) => b.denominacion));
+    const cuitValidado = firstNonEmpty(bcra.filter((b) => b.denominacion).map((b) => b.identificacion));
+    const arca = await consultarArca(cuitValidado || cuiles[0] || "");
+    const nombreBusqueda = nombreIngresado || nombreBcra || "";
+    const terminosBusqueda = unique([nombreBusqueda, nombreBcra, nombreIngresado]).filter((x) => x && !/^\d+$/.test(x));
+    const bcraEvidencias = bcra
+      .filter((b) => b.estado && !String(b.estado).startsWith("error"))
+      .map((b) => ({
         fuente: "BCRA Central de Deudores",
         categoria: "crediticia",
         url: "https://api.bcra.gob.ar/CentralDeDeudores/v1.0",
         titulo: `Consulta BCRA ${b.identificacion}`,
-        extracto: `Estado: ${b.estado}; deudas: ${b.deudas?.length || 0}; historico: ${b.historico?.length || 0}; cheques: ${b.cheques_rechazados?.length || 0}`,
-        confianza: b.estado && !String(b.estado).startsWith("error") ? "alta" : "media",
-        score: b.estado && !String(b.estado).startsWith("error") ? 95 : 55,
-        coincidencia: "identificador oficial",
-      })),
-      ...await buildSearchEvidence(nombre || identificador),
+        extracto: `Denominacion: ${b.denominacion || "sin dato"}; estado: ${b.estado}; deudas: ${b.deudas?.length || 0}; historico: ${b.historico?.length || 0}; cheques: ${b.cheques_rechazados?.length || 0}`,
+        confianza: "alta",
+        score: 95,
+        coincidencia: "identificador oficial BCRA",
+      }));
+    const evidencias = [
+      ...bcraEvidencias,
+      ...await buildSearchEvidence(terminosBusqueda),
     ];
     const verificadas = evidencias.filter((e) => e.confianza === "alta");
     const categorias = countBy(evidencias.map((e) => e.categoria));
@@ -69,7 +81,16 @@ Deno.serve(async (req) => {
     const confiabilidad = verificadas.length ? "alta" : evidencias.length > 4 ? "media" : "baja";
 
     return json({
-      target: { nombre, identificador, tipo: body.tipo || "indistinto", normalizado },
+      target: { nombre: nombreBusqueda || identificador, nombre_resuelto_bcra: nombreBcra || null, identificador, tipo: body.tipo || "indistinto", normalizado },
+      pipeline: {
+        entrada: identificador,
+        cuit_cuil_derivados: cuiles,
+        cuit_validado: cuitValidado || null,
+        nombre_resuelto: nombreBusqueda || null,
+        termino_busqueda_osint: terminosBusqueda[0] || null,
+        bcra: bcra.map((b) => ({ identificacion: b.identificacion, denominacion: b.denominacion || null, estado: b.estado, error: b.error || null })),
+        arca,
+      },
       resumen: {
         fecha: new Date().toISOString(),
         fuentes_consultadas: SOURCES.length + (cuiles.length ? 1 : 0),
@@ -81,15 +102,16 @@ Deno.serve(async (req) => {
         confiabilidad_global: confiabilidad,
       },
       hallazgos: [
-        { titulo: "Identidad normalizada", valor: normalizado.formateado || identificador || nombre, confianza: cuiles.length ? "alta" : "media", detalle: `CUIL/CUIT derivados o informados: ${cuiles.length}` },
-        { titulo: "Riesgo crediticio BCRA", valor: riesgo, confianza: cuiles.length ? "alta" : "baja", detalle: "Consulta directa contra API publica BCRA si hay CUIL/CUIT/DNI." },
+        { titulo: "Identidad normalizada", valor: nombreBusqueda || normalizado.formateado || identificador, confianza: nombreBcra ? "alta" : cuiles.length ? "media" : "baja", detalle: `CUIL/CUIT derivados o informados: ${cuiles.length}. Denominacion BCRA: ${nombreBcra ? "resuelta" : "no disponible"}.` },
+        { titulo: "CUIT usado para busquedas", valor: cuitValidado || cuiles[0] || "sin CUIT", confianza: cuitValidado ? "alta" : "media", detalle: `Termino OSINT: ${terminosBusqueda[0] || "no disponible"}. ARCA: ${arca.estado}.` },
+        { titulo: "Riesgo crediticio BCRA", valor: riesgo, confianza: bcraEvidencias.length ? "alta" : "baja", detalle: "Consulta directa contra API publica BCRA si hay CUIL/CUIT/DNI." },
         { titulo: "Cobertura OSINT", valor: `${evidencias.length} evidencias / ${SOURCES.length} fuentes`, confianza: confiabilidad, detalle: `Verificadas: ${verificadas.length}. Indicios: ${evidencias.length - verificadas.length}.` },
       ],
       fuentes: SOURCES.map((s) => ({ ...s, resultados: evidencias.filter((e) => e.fuente === s.nombre).length, estado: evidencias.some((e) => e.fuente === s.nombre) ? "con_hallazgos" : "consultada" })),
       evidencias,
       evidencias_verificadas: verificadas,
       indicios: evidencias.filter((e) => e.confianza !== "alta"),
-      grafo: buildGraph(nombre || identificador, evidencias, cuiles, categorias),
+      grafo: buildGraph(nombreBusqueda || identificador, evidencias, cuiles, categorias),
       limitaciones: [
         "El sistema usa fuentes abiertas y no evade captchas, logins, paywalls ni controles de acceso.",
         "Alta confianza requiere identificador oficial o coincidencias fuertes en fuentes independientes.",
@@ -105,41 +127,65 @@ function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...cors, "Content-Type": "application/json" } });
 }
 
-async function buildSearchEvidence(q: string) {
-  const quoted = `"${q}"`;
+async function buildSearchEvidence(terms: string[]) {
+  if (!terms.length) return [];
   const batches = await Promise.all(SOURCES.map(async (s) => {
     const host = new URL(s.url).hostname.replace(/^www\./, "");
-    const query = `site:${host} ${quoted}`;
-    const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    const queries = buildQueries(host, s.categoria, terms[0]).slice(0, 3);
     try {
-      const r = await fetch(searchUrl, {
-        headers: { "User-Agent": "Diagonales-Intelligence/1.0" },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!r.ok) return [];
-      const html = await r.text();
-      const matches = [...html.matchAll(/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>[\s\S]*?(?:<a[^>]+class="result__snippet"[^>]*>(.*?)<\/a>|<div[^>]+class="result__snippet"[^>]*>(.*?)<\/div>)?/g)].slice(0, 3);
-      return matches.map((m) => {
-        const title = cleanHtml(m[2]);
-        const snippet = cleanHtml(m[3] || m[4] || "");
-        const url = decodeDuckUrl(m[1]);
-        const score = scoreEvidence(q, title, snippet, s.categoria);
-        return {
-          fuente: s.nombre,
-          categoria: s.categoria,
-          url,
-          titulo: title || `Resultado en ${s.nombre}`,
-          extracto: snippet || query,
-          confianza: score >= 70 ? "alta" : score >= 35 ? "media" : "baja",
-          score,
-          coincidencia: score >= 70 ? "coincidencia fuerte en resultado indexado" : "coincidencia parcial en resultado indexado",
-        };
-      });
+      const found = [];
+      const seen = new Set<string>();
+      for (const query of queries) {
+        const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+        const r = await fetch(searchUrl, {
+          headers: { "User-Agent": "Diagonales-Intelligence/1.0" },
+          signal: AbortSignal.timeout(9000),
+        });
+        if (!r.ok) continue;
+        const html = await r.text();
+        const matches = [...html.matchAll(/<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>[\s\S]*?(?:<a[^>]+class="result__snippet"[^>]*>(.*?)<\/a>|<div[^>]+class="result__snippet"[^>]*>(.*?)<\/div>)?/g)].slice(0, 3);
+        for (const m of matches) {
+          const title = cleanHtml(m[2]);
+          const snippet = cleanHtml(m[3] || m[4] || "");
+          const url = decodeDuckUrl(m[1]);
+          if (seen.has(url)) continue;
+          seen.add(url);
+          const score = scoreEvidence(terms[0], title, snippet, s.categoria);
+          found.push({
+            fuente: s.nombre,
+            categoria: s.categoria,
+            url,
+            titulo: title || `Resultado en ${s.nombre}`,
+            extracto: snippet || query,
+            confianza: score >= 70 ? "alta" : score >= 35 ? "media" : "baja",
+            score,
+            coincidencia: score >= 70 ? "coincidencia fuerte en resultado indexado" : "coincidencia parcial en resultado indexado",
+            query,
+          });
+        }
+      }
+      return found.sort((a, b) => b.score - a.score).slice(0, 3);
     } catch {
       return [];
     }
   }));
   return batches.flat();
+}
+
+function buildQueries(host: string, categoria: string, term: string) {
+  const quoted = `"${term}"`;
+  const vocab: Record<string, string[]> = {
+    sociedades: ["CUIT", "sociedad", "directorio", "gerente", "edictos"],
+    boletines_provinciales: ["boletin oficial", "edicto", "resolucion", "decreto", "licitacion"],
+    judicial: ["causa", "expediente", "fallo", "sentencia", "demandado"],
+    licitaciones: ["licitacion", "contratacion", "adjudicacion", "proveedor"],
+    legisladores: ["diputado", "senador", "legislador", "bloque"],
+    medios: ["denuncia", "investigacion", "causa", "licitacion", "funcionario"],
+    crediticia: ["deudores", "cheques rechazados", "situacion crediticia"],
+    fiscal: ["CUIT", "constancia", "actividad"],
+    laboral: ["obra social", "empleador", "ART"],
+  };
+  return [`site:${host} ${quoted}`, ...(vocab[categoria] || ["Argentina"]).map((x) => `site:${host} ${quoted} ${x}`)];
 }
 
 function cleanHtml(s: string) {
@@ -168,23 +214,66 @@ function scoreEvidence(q: string, title: string, snippet: string, categoria: str
 }
 
 async function consultarBcra(id: string) {
-  const base = "https://api.bcra.gob.ar/CentralDeDeudores/v1.0";
-  const out: any = { identificacion: id, estado: "sin_datos", deudas: [], historico: [], cheques_rechazados: [] };
+  const out: any = { identificacion: id, denominacion: "", estado: "sin_datos", deudas: [], historico: [], cheques_rechazados: [] };
   for (const [key, path] of [["deudas", "Deudas"], ["historico", "DeudasHistoricas"], ["cheques_rechazados", "ChequesRechazados"]] as const) {
     try {
-      const r = await fetch(`${base}/${path}/${id}`, {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(7000),
-      });
+      const r = await fetchBcra(path, id);
       if (r.status === 404) { if (key === "deudas") out.estado = "sin_deudas"; continue; }
       if (!r.ok) continue;
       const data = await r.json();
+      out.denominacion ||= data?.results?.denominacion || "";
       const periodos = data?.results?.periodos || [];
       if (key === "deudas") out.estado = periodos.length ? "con_deudas" : "sin_deudas";
       out[key] = periodos.flatMap((p: any) => (p.entidades || []).map((e: any) => ({ periodo: p.periodo, ...e })));
-    } catch { out.estado = "error_api"; }
+    } catch (e) { out.estado = "error_api"; out.error = String(e?.message || e); }
   }
   return out;
+}
+
+async function consultarArca(cuit: string) {
+  if (!cuit) return { estado: "sin_cuit", fuente: "ARCA", datos: null };
+  return {
+    estado: "requiere_consulta_oficial_interactiva",
+    fuente: "ARCA",
+    cuit,
+    url: `https://www.arca.gob.ar/landing/default.asp`,
+    datos: null,
+    nota: "ARCA no ofrece en este flujo una respuesta JSON publica sin captcha/login para constancia completa; se conserva como etapa de verificacion oficial.",
+  };
+}
+
+async function fetchBcra(path: string, id: string) {
+  const urls = [
+    `https://api.bcra.gob.ar/CentralDeDeudores/v1.0/${path}/${id}`,
+    `http://api.bcra.gob.ar/CentralDeDeudores/v1.0/${path}/${id}`,
+  ];
+  let last: any;
+  for (const url of urls) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (attempt) await delay(600);
+        return await fetch(url, {
+          headers: { Accept: "application/json", "User-Agent": "Diagonales-Intelligence/1.0" },
+          signal: AbortSignal.timeout(12000),
+        });
+      } catch (e) {
+        last = e;
+      }
+    }
+  }
+  throw last;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function firstNonEmpty(values: unknown[]) {
+  return String(values.find((x) => typeof x === "string" && x.trim()) || "").trim();
+}
+
+function unique(values: string[]) {
+  return [...new Set(values.map((x) => String(x || "").trim()).filter(Boolean))];
 }
 
 function normalizeId(raw: string) {
