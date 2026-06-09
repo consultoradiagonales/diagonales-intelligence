@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscador OSINT — Diagonales</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; font-family: 'Inter', sans-serif; padding: 20px; }
+.container { max-width: 1200px; margin: 0 auto; }
+header { text-align: center; color: white; margin-bottom: 40px; }
+h1 { font-size: 2.5em; margin-bottom: 10px; }
+.search-box { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); margin-bottom: 30px; }
+.search-input { width: 100%; padding: 15px; font-size: 1.1em; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 15px; outline: none; }
+.search-input:focus { border-color: #667eea; }
+.search-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+button { padding: 12px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.btn-google { background: #4285f4; color: white; }
+.btn-google:hover { background: #357ae8; transform: translateY(-2px); }
+.btn-twitter { background: #1da1f2; color: white; }
+.btn-twitter:hover { background: #1a91da; }
+.btn-insta { background: #e4405f; color: white; }
+.btn-insta:hover { background: #d63447; }
+.btn-linkedin { background: #0a66c2; color: white; }
+.btn-linkedin:hover { background: #095195; }
+.btn-github { background: #333; color: white; }
+.btn-github:hover { background: #000; }
+.btn-bcra { background: #d4af37; color: #333; }
+.btn-bcra:hover { background: #c4a527; }
+.sources { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.source-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+.source-title { font-weight: 700; color: #333; margin-bottom: 10px; font-size: 1.1em; }
+.source-links { display: flex; flex-direction: column; gap: 8px; }
+.source-link { color: #667eea; text-decoration: none; font-size: 0.9em; padding: 8px; background: #f5f5f5; border-radius: 6px; transition: all 0.3s; }
+.source-link:hover { background: #667eea; color: white; }
+.results { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-top: 30px; display: none; }
+.result-item { padding: 15px; border-bottom: 1px solid #eee; }
+.result-item:last-child { border-bottom: none; }
+.result-title { font-weight: 600; color: #333; margin-bottom: 5px; }
+.result-url { font-size: 0.85em; color: #667eea; margin-bottom: 5px; }
+.result-desc { font-size: 0.9em; color: #666; line-height: 1.5; }
+.loading { text-align: center; color: #667eea; padding: 20px; }
+.spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab { padding: 10px 15px; background: #f0f0f0; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
+.tab.active { background: #667eea; color: white; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🔍 Buscador OSINT</h1>
+    <p>Búsquedas online integradas — Diagonales</p>
+  </header>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" class="search-input" placeholder="Ingresa: nombre, email, teléfono, DNI, empresa..." />
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('general')">General</button>
+      <button class="tab" onclick="switchTab('personas')">Personas</button>
+      <button class="tab" onclick="switchTab('empresas')">Empresas</button>
+      <button class="tab" onclick="switchTab('argentina')">Argentina</button>
+    </div>
+
+    <div id="general" class="tab-content active">
+      <div class="search-buttons">
+        <button class="btn-google" onclick="buscar('google')">🔍 Google</button>
+        <button class="btn-github" onclick="buscar('github')">⭐ GitHub</button>
+        <button class="btn-twitter" onclick="buscar('twitter')">𝕏 X/Twitter</button>
+        <button class="btn-insta" onclick="buscar('instagram')">📷 Instagram</button>
+        <button class="btn-linkedin" onclick="buscar('linkedin')">💼 LinkedIn</button>
+      </div>
+    </div>
+
+    <div id="personas" class="tab-content">
+      <div class="search-buttons">
+        <button class="btn-google" onclick="buscar('google-person')">Google Personas</button>
+        <button class="btn-linkedin" onclick="buscar('linkedin-person')">LinkedIn Profile</button>
+        <button class="btn-twitter" onclick="buscar('twitter-person')">X Profile</button>
+        <button onclick="buscar('email')" style="background: #ff6b6b; color: white; border: none; border-radius: 8px; padding: 12px;">📧 Email</button>
+        <button onclick="buscar('phone')" style="background: #4c6ef5; color: white; border: none; border-radius: 8px; padding: 12px;">☎️ Teléfono</button>
+      </div>
+    </div>
+
+    <div id="empresas" class="tab-content">
+      <div class="search-buttons">
+        <button class="btn-google" onclick="buscar('empresa-google')">Google Empresas</button>
+        <button class="btn-linkedin" onclick="buscar('empresa-linkedin')">LinkedIn Company</button>
+        <button onclick="buscar('cuit')" style="background: #845ef7; color: white; border: none; border-radius: 8px; padding: 12px;">🏢 CUIT/CNEL</button>
+        <button onclick="buscar('dominio')" style="background: #15aabf; color: white; border: none; border-radius: 8px; padding: 12px;">🌐 Dominio Web</button>
+      </div>
+    </div>
+
+    <div id="argentina" class="tab-content">
+      <div class="search-buttons">
+        <button class="btn-bcra" onclick="buscar('bcra')">🏦 BCRA Deudores</button>
+        <button onclick="buscar('boletín')" style="background: #2f9e44; color: white; border: none; border-radius: 8px; padding: 12px;">📰 Boletín Oficial</button>
+        <button onclick="buscar('juzgados')" style="background: #c92a2a; color: white; border: none; border-radius: 8px; padding: 12px;">⚖️ Juzgados</button>
+        <button onclick="buscar('licitaciones')" style="background: #e67700; color: white; border: none; border-radius: 8px; padding: 12px;">💰 Licitaciones</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="results" class="results"></div>
+</div>
+
+<script>
+const searchInput = document.getElementById('searchInput');
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function mostrarResultados(html) {
+  const results = document.getElementById('results');
+  results.innerHTML = html;
+  results.style.display = 'block';
+  results.scrollIntoView({ behavior: 'smooth' });
+}
+
+function buscar(tipo) {
+  const q = searchInput.value.trim();
+  if (!q) { alert('Ingresa algo para buscar'); return; }
+
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div> Buscando...</div>';
+  resultsDiv.style.display = 'block';
+
+  let urls = [];
+  const googleBase = 'https://www.google.com/search?q=';
+  const githubBase = 'https://github.com/search?q=';
+  const twitterBase = 'https://x.com/search?q=';
+  const linkedinBase = 'https://www.linkedin.com/search/results/all/?keywords=';
+  const instagramBase = 'https://www.instagram.com/explore/tags/';
+
+  switch(tipo) {
+    case 'google':
+      urls = [
+        { titulo: 'Google', url: googleBase + encodeURIComponent(q) },
+        { titulo: 'Google News', url: 'https://news.google.com/search?q=' + encodeURIComponent(q) },
+        { titulo: 'Google Images', url: 'https://images.google.com/search?q=' + encodeURIComponent(q) }
+      ];
+      break;
+    case 'github':
+      urls = [
+        { titulo: 'GitHub Users', url: 'https://github.com/search?q=' + encodeURIComponent(q) + '&type=users' },
+        { titulo: 'GitHub Code', url: githubBase + encodeURIComponent(q) }
+      ];
+      break;
+    case 'twitter':
+      urls = [
+        { titulo: 'X Search', url: twitterBase + encodeURIComponent(q) }
+      ];
+      break;
+    case 'instagram':
+      urls = [
+        { titulo: 'Instagram Search', url: 'https://www.instagram.com/' + q.replace(/\s/g, '') + '/' },
+        { titulo: 'Instagram Tags', url: instagramBase + encodeURIComponent(q) }
+      ];
+      break;
+    case 'linkedin':
+      urls = [
+        { titulo: 'LinkedIn Search', url: linkedinBase + encodeURIComponent(q) }
+      ];
+      break;
+    case 'google-person':
+      urls = [
+        { titulo: 'Google: Persona', url: googleBase + encodeURIComponent(q + ' Argentina') },
+        { titulo: 'Google: Redes sociales', url: googleBase + encodeURIComponent(q + ' Instagram OR LinkedIn OR Twitter') }
+      ];
+      break;
+    case 'linkedin-person':
+      urls = [
+        { titulo: 'LinkedIn Profile', url: linkedinBase + encodeURIComponent(q) }
+      ];
+      break;
+    case 'twitter-person':
+      urls = [
+        { titulo: 'X Profile', url: twitterBase + encodeURIComponent(q) }
+      ];
+      break;
+    case 'email':
+      urls = [
+        { titulo: 'Google Email', url: googleBase + encodeURIComponent('"' + q + '"') },
+        { titulo: 'Hunter.io', url: 'https://hunter.io' },
+        { titulo: 'Email finder', url: googleBase + encodeURIComponent(q + ' email') }
+      ];
+      break;
+    case 'phone':
+      urls = [
+        { titulo: 'Google Phone', url: googleBase + encodeURIComponent(q) },
+        { titulo: 'Truecaller', url: 'https://www.truecaller.com/search/' + q }
+      ];
+      break;
+    case 'empresa-google':
+      urls = [
+        { titulo: 'Google Empresa', url: googleBase + encodeURIComponent(q + ' Argentina empresa') },
+        { titulo: 'Google Maps', url: 'https://www.google.com/maps/search/' + encodeURIComponent(q) }
+      ];
+      break;
+    case 'empresa-linkedin':
+      urls = [
+        { titulo: 'LinkedIn Company', url: 'https://www.linkedin.com/search/results/companies/?keywords=' + encodeURIComponent(q) }
+      ];
+      break;
+    case 'cuit':
+      urls = [
+        { titulo: 'AFIP CUIT', url: 'https://www.afip.gob.ar' },
+        { titulo: 'Google CUIT', url: googleBase + encodeURIComponent(q + ' CUIT AFIP') }
+      ];
+      break;
+    case 'dominio':
+      urls = [
+        { titulo: 'WHOIS Lookup', url: 'https://www.whois.com/whois/' + q },
+        { titulo: 'Domain Info', url: 'https://www.iana.org/domains' }
+      ];
+      break;
+    case 'bcra':
+      urls = [
+        { titulo: 'BCRA Deudores', url: 'https://www.bcra.gob.ar/situacion-crediticia/' },
+        { titulo: 'Central de Deudores', url: 'https://api.bcra.gob.ar/CentralDeDeudores/v1.0' }
+      ];
+      break;
+    case 'boletín':
+      urls = [
+        { titulo: 'Boletín Oficial', url: 'https://www.boletinoficial.gob.ar' },
+        { titulo: 'Boletín Search', url: googleBase + encodeURIComponent('site:boletinoficial.gob.ar ' + q) }
+      ];
+      break;
+    case 'juzgados':
+      urls = [
+        { titulo: 'Poder Judicial', url: 'https://www.pjn.gov.ar' },
+        { titulo: 'CSJN', url: 'https://www.csjn.gov.ar' },
+        { titulo: 'Juzgados Federal', url: 'https://www.jus.gob.ar' }
+      ];
+      break;
+    case 'licitaciones':
+      urls = [
+        { titulo: 'Compras.gob.ar', url: 'https://www.compras.gob.ar' },
+        { titulo: 'ONCOSAC', url: 'https://www.oncosac.gob.ar' }
+      ];
+      break;
+  }
+
+  setTimeout(() => {
+    let html = '<h2 style="color: #333; margin-bottom: 20px;">Resultados para: <strong>' + q + '</strong></h2>';
+    urls.forEach(r => {
+      html += `<div class="result-item">
+        <div class="result-title">${r.titulo}</div>
+        <a href="${r.url}" target="_blank" class="result-url">${r.url.substring(0, 80)}...</a>
+      </div>`;
+    });
+    mostrarResultados(html);
+  }, 500);
+}
+
+searchInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter') buscar('google');
+});
+</script>
+
+</body>
+</html>

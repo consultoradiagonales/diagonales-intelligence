@@ -63,6 +63,12 @@ def radiografia_page():
     return FileResponse(path)
 
 
+@app.get("/buscador", response_class=HTMLResponse)
+def buscador_page():
+    path = os.path.join(FRONTEND_DIR, "templates", "buscador.html")
+    return FileResponse(path)
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard_page():
     path = os.path.join(FRONTEND_DIR, "templates", "dashboard.html")
