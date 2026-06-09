@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscador OSINT Argentina — Diagonales Intelligence</title>
+<style>
+:root {
+  --bg: #f6f8fb; --ink: #182230; --muted: #667085; --line: #d9e2ec;
+  --panel: #ffffff; --accent: #155eef; --accent2: #0e9384;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); font-family: Inter, -apple-system, sans-serif; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+header { padding: 30px 0 20px; border-bottom: 1px solid var(--line); margin-bottom: 20px; }
+h1 { margin: 0 0 8px; font-size: 2.2em; letter-spacing: -0.5px; }
+.subtitle { margin: 0; color: var(--muted); font-size: 0.95em; }
+.grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+input, select { width: 100%; height: 40px; border: 1px solid var(--line); border-radius: 6px; padding: 0 12px; margin-bottom: 12px; font-size: 0.9em; font-family: inherit; }
+input:focus, select:focus { outline: 2px solid #bfd7ff; border-color: var(--accent); }
+label { display: block; font-weight: 600; margin: 16px 0 6px; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; color: #475467; }
+button { background: var(--accent); color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9em; margin: 5px 5px 5px 0; transition: all 0.2s; }
+button:hover { opacity: 0.9; transform: translateY(-1px); }
+.secondary { background: #f2f4f7; color: var(--ink); border: 1px solid var(--line); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; border-bottom: 2px solid var(--line); }
+.tab { padding: 10px 14px; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid transparent; color: var(--muted); font-weight: 500; transition: all 0.2s; }
+.tab:hover { color: var(--ink); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.results { display: grid; gap: 12px; max-height: 800px; overflow-y: auto; }
+.result-group { border-top: 2px solid var(--line); padding-top: 16px; margin-top: 16px; }
+.result-group:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+.group-title { font-weight: 700; color: var(--accent); font-size: 0.9em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.result-card { background: #f8fafc; border: 1px solid #eef2f6; border-radius: 6px; padding: 12px; }
+.result-card h3 { margin: 0 0 6px; font-size: 0.95em; color: var(--ink); }
+.result-card p { margin: 0; font-size: 0.8em; color: var(--muted); word-break: break-all; }
+.result-card a { color: var(--accent); text-decoration: none; }
+.result-card a:hover { text-decoration: underline; }
+.empty { color: var(--muted); padding: 40px 20px; text-align: center; }
+.footnote { color: var(--muted); font-size: 0.8em; line-height: 1.5; margin-top: 14px; }
+.dork-box { background: #f8fafc; border: 1px solid #eef2f6; border-radius: 6px; padding: 12px; margin: 10px 0; font-family: monospace; font-size: 0.8em; color: #344054; word-break: break-all; }
+.copy-btn { background: white; border: 1px solid var(--line); color: var(--accent); padding: 4px 8px; font-size: 0.75em; }
+@media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>🔍 Buscador OSINT Argentina</h1>
+    <p class="subtitle">Búsquedas integradas en boletines, registros, legisladores y fuentes públicas argentinas</p>
+  </header>
+
+  <div class="grid">
+    <!-- SIDEBAR -->
+    <aside class="panel">
+      <label for="consulta">Nombre / Empresa / DNI / CUIT</label>
+      <input id="consulta" placeholder="Ej: Javier Milei" autocomplete="off">
+
+      <label for="provincia">Provincia</label>
+      <select id="provincia">
+        <option value="">Todas las provincias</option>
+        <option value="CABA">CABA</option>
+        <option value="Buenos Aires">Buenos Aires</option>
+        <option value="Córdoba">Córdoba</option>
+        <option value="Santa Fe">Santa Fe</option>
+        <option value="Mendoza">Mendoza</option>
+        <option value="Tucumán">Tucumán</option>
+        <option value="Salta">Salta</option>
+        <option value="Chaco">Chaco</option>
+        <option value="Misiones">Misiones</option>
+        <option value="Corrientes">Corrientes</option>
+        <option value="Entre Ríos">Entre Ríos</option>
+        <option value="Formosa">Formosa</option>
+        <option value="Jujuy">Jujuy</option>
+        <option value="La Pampa">La Pampa</option>
+        <option value="La Rioja">La Rioja</option>
+        <option value="Neuquén">Neuquén</option>
+        <option value="Río Negro">Río Negro</option>
+        <option value="San Juan">San Juan</option>
+        <option value="San Luis">San Luis</option>
+        <option value="Santa Cruz">Santa Cruz</option>
+        <option value="Santiago del Estero">Santiago del Estero</option>
+        <option value="Tierra del Fuego">Tierra del Fuego</option>
+        <option value="Chubut">Chubut</option>
+        <option value="Catamarca">Catamarca</option>
+      </select>
+
+      <label for="tipo">Tipo de búsqueda</label>
+      <select id="tipo">
+        <option value="todas">Todas las fuentes</option>
+        <option value="general">General (Google, redes)</option>
+        <option value="judicial">Judicial (juzgados, CSJN)</option>
+        <option value="patrimonial">Patrimonial (licitaciones, BORA)</option>
+        <option value="crediticia">Crediticia (BCRA, deudores)</option>
+        <option value="societaria">Sociedades (BORA, IGJ)</option>
+        <option value="legisladores">Legisladores (diputados, senadores)</option>
+        <option value="medios">Medios (diarios, radio, TV)</option>
+        <option value="dorks">Solo search dorks</option>
+      </select>
+
+      <button onclick="buscar()">🔍 Buscar</button>
+      <button class="secondary" onclick="abrirTodos()">Abrir todos</button>
+      <button class="secondary" onclick="copiarDorks()">Copiar dorks</button>
+      <button class="secondary" onclick="limpiar()">Limpiar</button>
+
+      <p class="footnote">Integra boletines oficiales, registros públicos, legisladores, medios y juzgados de Argentina.</p>
+    </aside>
+
+    <!-- RESULTADOS -->
+    <main class="panel">
+      <div class="tabs" id="tabs"></div>
+      <div id="resultados" class="results">
+        <div class="empty">Ingresá una consulta y presioná Buscar</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const BASES = {
+  nacional: {
+    bora: { label: 'Boletín Oficial (BORA)', url: 'https://www.boletinoficial.gob.ar' },
+    bora_segunda: { label: 'BORA - Segundá Sección (Sociedades)', url: 'https://www.boletinoficial.gob.ar/seccion/segunda' },
+    timeline: { label: 'BORA - Timeline Societario', url: 'https://timeline.boletinoficial.gob.ar' },
+    bcra: { label: 'BCRA - Central de Deudores', url: 'https://www.bcra.gob.ar/BCRAyVos/Situacion_Crediticia.asp' },
+    cheques_rechazados: { label: 'BCRA - Cheques Rechazados', url: 'https://www.bcra.gob.ar/BCRAyVos/Central-de-cheques-rechazados.asp' },
+    anses: { label: 'ANSES', url: 'https://www.anses.gob.ar' },
+    arca: { label: 'ARCA (AFIP)', url: 'https://www.arca.gob.ar' },
+    igj: { label: 'IGJ - Sociedades Comerciales', url: 'https://www.argentina.gob.ar/justicia/igj' },
+    rns: { label: 'Registro Nac. de Sociedades', url: 'https://www.argentina.gob.ar/justicia/registro-nacional-sociedades' },
+    pjn: { label: 'PJN - Poder Judicial Nación', url: 'https://www.pjn.gov.ar' },
+    csjn: { label: 'CSJN', url: 'https://www.csjn.gov.ar' },
+    diputados: { label: 'Diputados Nacionales', url: 'https://www.diputados.gov.ar/diputados' },
+    senado: { label: 'Senadores Nacionales', url: 'https://www.senado.gob.ar/senadores/listado/completo' },
+    directorio: { label: 'Directorio Legislativo', url: 'https://directoriodirecto.org' },
+    compras: { label: 'Compras.gob.ar', url: 'https://www.compras.gob.ar' },
+    licitaciones: { label: 'ONCOSAC', url: 'https://www.oncosac.gob.ar' },
+  },
+  provinciales: {
+    'CABA': { bora: 'https://boletinoficial.buenosaires.gob.ar', legisladores: 'https://www.legislatura.gob.ar/posts/legisladores', juzgados: 'https://www.jusbaires.gob.ar', diarios: ['https://www.clarin.com', 'https://www.lanacion.com.ar', 'https://www.pagina12.com.ar'] },
+    'Buenos Aires': { bora: 'https://boletinoficial.gba.gob.ar', diputados: 'https://www.hcdiputados-ba.gov.ar', senadores: 'https://www.senado-ba.gov.ar', diarios: ['https://www.eldia.com', 'https://www.lanacion.com.ar'] },
+    'Córdoba': { bora: 'https://boletinoficial.cba.gov.ar', legisladores: 'https://legislaturacba.gob.ar/legisladores', diarios: ['https://www.lavoz.com.ar', 'https://hoydiacordoba.info'] },
+    'Santa Fe': { bora: 'https://www.santafe.gob.ar/boletinoficial', diputados: 'https://www.diputadossantafe.gov.ar', senadores: 'https://www.senadosantafe.gob.ar', diarios: ['https://www.ellitoral.com', 'https://www.lacapital.com.ar'] },
+    'Mendoza': { bora: 'https://boletinoficial.mendoza.gov.ar', diputados: 'https://www.hcdmza.gob.ar', senadores: 'https://www.senadomendoza.gob.ar', diarios: ['https://www.losandes.com.ar', 'https://www.diariouno.com.ar'] },
+    'Tucumán': { bora: 'https://boletin.tucuman.gov.ar', legisladores: 'https://www.legislaturadetucuman.gob.ar', diarios: ['https://www.lagaceta.com.ar', 'https://www.elsigloweb.com'] },
+    'Salta': { bora: 'https://boletinoficialsalta.gob.ar', diputados: 'https://www.diputadosalta.gob.ar', senadores: 'https://www.senadosalta.gob.ar', diarios: ['https://www.eltribuno.com/salta'] },
+    'Chaco': { bora: 'https://boletin.chaco.gob.ar', diputados: 'https://legislaturachaco.gov.ar', diarios: ['https://www.diarionorte.com'] },
+    'Misiones': { bora: 'https://www.boletin.misiones.gov.ar', legisladores: 'https://www.diputadosmisiones.gov.ar', diarios: ['https://www.elterritorio.com.ar'] },
+    'Corrientes': { bora: 'https://boletinoficial.corrientes.gob.ar', diputados: 'https://hcddcorrientes.gov.ar', senadores: 'https://hcsenado.gov.ar', diarios: ['https://www.ellitoral.com.ar'] },
+    'Entre Ríos': { bora: 'https://www.entrerios.gov.ar/boletin', diputados: 'https://hcde.gov.ar', senadores: 'https://senadoer.gob.ar', diarios: ['https://www.eldiario.com.ar'] },
+    'Formosa': { bora: 'https://www.formosa.gob.ar/boletinoficial', diputados: 'https://www.legislaturaformosa.gob.ar', diarios: ['https://www.lamananaonline.com.ar'] },
+    'Jujuy': { bora: 'https://boletinoficial.jujuy.gob.ar', diputados: 'https://www.legislaturajujuy.gov.ar', diarios: ['https://www.eltribuno.com/jujuy'] },
+    'La Pampa': { bora: 'https://boletinoficial.lapampa.gob.ar', diputados: 'https://camaradediputados.lapampa.gob.ar', diarios: ['https://www.laarena.com.ar'] },
+    'La Rioja': { bora: 'https://www.boletinoflarioja.com.ar', legisladores: 'https://www.legislaturalarioja.gob.ar', diarios: ['https://www.elindependiente.com.ar'] },
+    'Neuquén': { bora: 'https://boletinoficial.neuquen.gov.ar', diputados: 'https://www.legislaturaneuquen.gob.ar', diarios: ['https://www.lmneuquen.com'] },
+    'Río Negro': { bora: 'https://boletinoficial.rionegro.gov.ar', legisladores: 'https://legisrn.gov.ar/web', diarios: ['https://www.rionegro.com.ar'] },
+    'San Juan': { bora: 'https://boletinoficial.sanjuan.gob.ar', diputados: 'https://diputadosanjuan.gob.ar', diarios: ['https://www.diariodecuyo.com.ar'] },
+    'San Luis': { bora: 'https://boletinoficial.sanluis.gov.ar', diputados: 'https://diputados.sanluis.gov.ar', senadores: 'https://senado.sanluis.gov.ar', diarios: ['https://www.eldiariodelarepublica.com'] },
+    'Santa Cruz': { bora: 'https://boletinoficial.santacruz.gob.ar', diputados: 'https://www.legislaturasantacruz.gob.ar', diarios: ['https://laopinionaustral.com.ar'] },
+    'Santiago del Estero': { bora: 'https://www.boletinsde.gov.ar', legisladores: 'https://www.legislaturasde.gob.ar', diarios: ['https://www.elliberal.com.ar'] },
+    'Tierra del Fuego': { bora: 'https://www.tierradelfuego.gob.ar/boletin-oficial', legisladores: 'https://legistdf.gob.ar', diarios: ['https://www.eldiariodelfindelmundo.com'] },
+    'Chubut': { bora: 'https://boletin.chubut.gov.ar', diputados: 'https://www.legischubut.gov.ar', diarios: ['https://www.elchubut.com.ar'] },
+    'Catamarca': { bora: 'https://portal.catamarca.gob.ar/boletin', diputados: 'https://www.diputados-catamarca.gov.ar', senadores: 'https://www.senadocatamarca.gob.ar', diarios: ['https://www.elancasti.com.ar'] },
+  },
+  medios_nacionales: {
+    diarios: [
+      { nombre: 'Clarín', url: 'https://www.clarin.com' },
+      { nombre: 'La Nación', url: 'https://www.lanacion.com.ar' },
+      { nombre: 'Infobae', url: 'https://www.infobae.com' },
+      { nombre: 'Página 12', url: 'https://www.pagina12.com.ar' },
+      { nombre: 'Ámbito', url: 'https://www.ambito.com' },
+      { nombre: 'Perfil', url: 'https://www.perfil.com' },
+      { nombre: 'El Cronista', url: 'https://www.cronista.com' },
+      { nombre: 'Crónica', url: 'https://www.cronica.com.ar' },
+    ],
+    canales: [
+      { nombre: 'TN', url: 'https://tn.com.ar' },
+      { nombre: 'C5N', url: 'https://www.c5n.com' },
+      { nombre: 'A24', url: 'https://www.a24.com' },
+      { nombre: 'Todo Noticias (YouTube)', url: 'https://www.youtube.com/@todonoticias' },
+      { nombre: 'C5N (YouTube)', url: 'https://www.youtube.com/@c5n' },
+      { nombre: 'El Destape', url: 'https://www.youtube.com/@eldestapetv' },
+      { nombre: 'Neura Media', url: 'https://www.youtube.com/@NeuraMedia' },
+    ],
+    radios: [
+      { nombre: 'Radio Mitre', url: 'https://radiomitre.cienradios.com' },
+      { nombre: 'Radio Continental', url: 'https://radiocontinental.com.ar' },
+      { nombre: 'Radio Rivadavia', url: 'https://www.rivadavia.com.ar' },
+    ]
+  }
+};
+
+const state = { data: null, links: [], dorks: [] };
+
+function buscar() {
+  const consulta = document.getElementById('consulta').value.trim();
+  const provincia = document.getElementById('provincia').value;
+  const tipo = document.getElementById('tipo').value;
+
+  if (!consulta) { alert('Ingresá una búsqueda'); return; }
+
+  const { links, dorks } = generarBusqueda(consulta, provincia, tipo);
+  state.links = links;
+  state.dorks = dorks;
+  mostrarResultados(links, dorks);
+}
+
+function generarBusqueda(q, prov, tipo) {
+  const links = [];
+  const dorks = [];
+  const gq = encodeURIComponent(q);
+
+  // GENERAL
+  if (tipo === 'todas' || tipo === 'general') {
+    links.push({ cat: 'Búsqueda General', label: 'Google', url: `https://www.google.com/search?q=${gq}` });
+    links.push({ cat: 'Búsqueda General', label: 'Google News', url: `https://news.google.com/search?q=${gq}` });
+    links.push({ cat: 'Búsqueda General', label: 'X/Twitter', url: `https://x.com/search?q=${gq}` });
+    links.push({ cat: 'Búsqueda General', label: 'LinkedIn', url: `https://www.linkedin.com/search/results/all/?keywords=${gq}` });
+  }
+
+  // JUDICIAL
+  if (tipo === 'todas' || tipo === 'judicial') {
+    links.push({ cat: 'Judicial', label: 'PJN', url: BASES.nacional.pjn.url });
+    links.push({ cat: 'Judicial', label: 'CSJN', url: BASES.nacional.csjn.url });
+    dorks.push(`site:pjn.gov.ar "${q}"`);
+    dorks.push(`site:csjn.gov.ar "${q}"`);
+    dorks.push(`"${q}" causa judicial OR imputado OR procesado`);
+  }
+
+  // PATRIMONIAL
+  if (tipo === 'todas' || tipo === 'patrimonial') {
+    links.push({ cat: 'Patrimonial/Licitaciones', label: 'Compras.gob.ar', url: BASES.nacional.compras.url });
+    links.push({ cat: 'Patrimonial/Licitaciones', label: 'ONCOSAC', url: BASES.nacional.licitaciones.url });
+    links.push({ cat: 'Patrimonial/Licitaciones', label: 'BORA', url: BASES.nacional.bora.url });
+    dorks.push(`site:boletinoficial.gob.ar "${q}" licitacion OR licitación`);
+    dorks.push(`site:compras.gob.ar "${q}"`);
+  }
+
+  // CREDITICIA
+  if (tipo === 'todas' || tipo === 'crediticia') {
+    links.push({ cat: 'BCRA', label: 'BCRA - Central de Deudores', url: BASES.nacional.bcra.url });
+    links.push({ cat: 'BCRA', label: 'BCRA - Cheques Rechazados', url: BASES.nacional.cheques_rechazados.url });
+  }
+
+  // SOCIETARIA
+  if (tipo === 'todas' || tipo === 'societaria') {
+    links.push({ cat: 'Sociedades', label: 'Boletín Oficial', url: BASES.nacional.bora.url });
+    links.push({ cat: 'Sociedades', label: 'BORA - Segunda Sección', url: BASES.nacional.bora_segunda.url });
+    links.push({ cat: 'Sociedades', label: 'Timeline Societario', url: BASES.nacional.timeline.url });
+    links.push({ cat: 'Sociedades', label: 'IGJ', url: BASES.nacional.igj.url });
+    dorks.push(`site:boletinoficial.gob.ar "${q}" sociedad OR S.A. OR S.R.L.`);
+    dorks.push(`site:timeline.boletinoficial.gob.ar "${q}"`);
+  }
+
+  // LEGISLADORES
+  if (tipo === 'todas' || tipo === 'legisladores') {
+    links.push({ cat: 'Legisladores', label: 'Diputados Nacionales', url: BASES.nacional.diputados.url });
+    links.push({ cat: 'Legisladores', label: 'Senadores Nacionales', url: BASES.nacional.senado.url });
+    links.push({ cat: 'Legisladores', label: 'Directorio Legislativo', url: BASES.nacional.directorio.url });
+  }
+
+  // MEDIOS
+  if (tipo === 'todas' || tipo === 'medios') {
+    BASES.medios_nacionales.diarios.forEach(d => {
+      links.push({ cat: 'Medios - Diarios', label: d.nombre, url: d.url });
+    });
+    BASES.medios_nacionales.canales.forEach(c => {
+      links.push({ cat: 'Medios - Canales', label: c.nombre, url: c.url });
+    });
+    dorks.push(`site:clarin.com "${q}"`);
+    dorks.push(`site:lanacion.com.ar "${q}"`);
+    dorks.push(`site:infobae.com "${q}"`);
+  }
+
+  // PROVINCIAL
+  if (prov && BASES.provinciales[prov]) {
+    const pb = BASES.provinciales[prov];
+    if (pb.bora) links.push({ cat: `Provincial - ${prov}`, label: 'Boletín Oficial', url: pb.bora });
+    if (pb.diputados) links.push({ cat: `Provincial - ${prov}`, label: 'Diputados', url: pb.diputados });
+    if (pb.senadores) links.push({ cat: `Provincial - ${prov}`, label: 'Senadores', url: pb.senadores });
+    if (pb.legisladores) links.push({ cat: `Provincial - ${prov}`, label: 'Legisladores', url: pb.legisladores });
+    if (pb.juzgados) links.push({ cat: `Provincial - ${prov}`, label: 'Juzgados', url: pb.juzgados });
+    if (pb.diarios) {
+      pb.diarios.forEach(d => {
+        links.push({ cat: `Provincial - ${prov}`, label: 'Diario', url: d });
+      });
+    }
+  }
+
+  // DORKS
+  if (tipo === 'dorks') {
+    dorks.push(`"${q}" Argentina`);
+    dorks.push(`"${q}" politico OR candidato OR funcionario`);
+    dorks.push(`site:x.com "${q}"`);
+    dorks.push(`site:instagram.com "${q}"`);
+    dorks.push(`site:linkedin.com "${q}"`);
+  }
+
+  return { links: links.filter(l => l), dorks: dorks };
+}
+
+function mostrarResultados(links, dorks) {
+  const porcategoria = {};
+  links.forEach(l => {
+    if (!porcategoria[l.cat]) porcategoria[l.cat] = [];
+    porcategoria[l.cat].push(l);
+  });
+
+  let tabsHtml = '<button class="tab active" data-cat="todos" onclick="filtrarTab(\'todos\')">Todos</button>';
+  Object.keys(porcategoria).forEach(c => {
+    tabsHtml += `<button class="tab" data-cat="${c}" onclick="filtrarTab('${c}')">${c}</button>`;
+  });
+  if (dorks.length > 0) tabsHtml += '<button class="tab" data-cat="dorks" onclick="filtrarTab(\'dorks\')">Search Dorks</button>';
+  document.getElementById('tabs').innerHTML = tabsHtml;
+
+  let resultHtml = '';
+
+  // Todos
+  let todosHtml = '';
+  Object.entries(porcategoria).forEach(([cat, items]) => {
+    todosHtml += `<div class="result-group"><div class="group-title">${cat}</div>`;
+    items.forEach(link => {
+      todosHtml += `<div class="result-card"><h3>${link.label}</h3><p><a href="${link.url}" target="_blank">${link.url}</a></p></div>`;
+    });
+    todosHtml += '</div>';
+  });
+  if (dorks.length > 0) {
+    todosHtml += `<div class="result-group"><div class="group-title">Search Dorks</div>`;
+    dorks.forEach(d => {
+      todosHtml += `<div class="dork-box">${d}</div>`;
+    });
+    todosHtml += '</div>';
+  }
+  resultHtml += `<div id="tab-todos" class="tab-content active">${todosHtml}</div>`;
+
+  // Por categoría
+  Object.entries(porcategoria).forEach(([cat, items]) => {
+    let catHtml = `<div class="result-group">`;
+    items.forEach(link => {
+      catHtml += `<div class="result-card"><h3>${link.label}</h3><p><a href="${link.url}" target="_blank">${link.url}</a></p></div>`;
+    });
+    catHtml += '</div>';
+    resultHtml += `<div id="tab-${cat}" class="tab-content">${catHtml}</div>`;
+  });
+
+  // Dorks
+  if (dorks.length > 0) {
+    let dorksHtml = '<div class="result-group">';
+    dorks.forEach(d => {
+      dorksHtml += `<div class="dork-box">${d}</div>`;
+    });
+    dorksHtml += '</div>';
+    resultHtml += `<div id="tab-dorks" class="tab-content">${dorksHtml}</div>`;
+  }
+
+  document.getElementById('resultados').innerHTML = resultHtml;
+  filtrarTab('todos');
+}
+
+function filtrarTab(cat) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-cat="${cat}"]`).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`tab-${cat}`).classList.add('active');
+}
+
+function abrirTodos() {
+  state.links.forEach(l => window.open(l.url, '_blank'));
+}
+
+function copiarDorks() {
+  if (state.dorks.length === 0) { alert('No hay dorks para copiar'); return; }
+  navigator.clipboard.writeText(state.dorks.join('\n'));
+  alert(`${state.dorks.length} dorks copiados al portapapeles`);
+}
+
+function limpiar() {
+  document.getElementById('consulta').value = '';
+  document.getElementById('resultados').innerHTML = '<div class="empty">Ingresá una consulta y presioná Buscar</div>';
+  state.links = [];
+  state.dorks = [];
+}
+</script>
+
+</body>
+</html>
