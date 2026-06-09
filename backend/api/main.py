@@ -4,8 +4,13 @@ Endpoints principales de la plataforma.
 """
 import json
 import os
+import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import quote_plus, urlparse
+import httpx
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -231,6 +236,41 @@ class BusquedaOsintRequest(BaseModel):
     tipo: str = "persona"
 
 
+class InformeComercialRequest(BaseModel):
+    nombre: str
+    identificador: Optional[str] = None
+    provincia: Optional[str] = None
+    tipo: str = "persona"
+    max_resultados_por_fuente: int = 5
+
+
+SOURCE_CATALOG = [
+    {"id": "bora", "nombre": "Boletin Oficial BORA", "categoria": "sociedades", "url": "https://www.boletinoficial.gob.ar/"},
+    {"id": "bora_segunda", "nombre": "BORA Segunda Seccion", "categoria": "sociedades", "url": "https://www.boletinoficial.gob.ar/seccion/segunda"},
+    {"id": "timeline_bora", "nombre": "Timeline societario BORA", "categoria": "sociedades", "url": "https://timeline.boletinoficial.gob.ar/"},
+    {"id": "rns", "nombre": "Registro Nacional de Sociedades", "categoria": "sociedades", "url": "https://www.argentina.gob.ar/justicia/registro-nacional-sociedades"},
+    {"id": "igj", "nombre": "IGJ", "categoria": "sociedades", "url": "https://www.argentina.gob.ar/justicia/igj"},
+    {"id": "bcra", "nombre": "BCRA Central de Deudores", "categoria": "crediticia", "url": "https://www.bcra.gob.ar/BCRAyVos/Situacion_Crediticia.asp"},
+    {"id": "arca", "nombre": "ARCA", "categoria": "fiscal", "url": "https://www.arca.gob.ar/"},
+    {"id": "sssalud", "nombre": "SSSalud", "categoria": "laboral", "url": "https://www.sssalud.gob.ar/"},
+    {"id": "anses", "nombre": "ANSES", "categoria": "laboral", "url": "https://www.anses.gob.ar/"},
+    {"id": "srt", "nombre": "SRT", "categoria": "laboral", "url": "https://www.srt.gob.ar/"},
+    {"id": "pjn", "nombre": "PJN", "categoria": "judicial", "url": "https://www.pjn.gov.ar/"},
+    {"id": "csjn", "nombre": "CSJN", "categoria": "judicial", "url": "https://www.csjn.gov.ar/"},
+    {"id": "compras", "nombre": "Compras publicas", "categoria": "licitaciones", "url": "https://www.compras.gob.ar/"},
+    {"id": "diputados", "nombre": "Diputados Nacionales", "categoria": "legisladores", "url": "https://www.diputados.gov.ar/diputados/"},
+    {"id": "senado", "nombre": "Senado Nacional", "categoria": "legisladores", "url": "https://www.senado.gob.ar/senadores/listado/completo"},
+    {"id": "directorio_legislativo", "nombre": "Directorio Legislativo", "categoria": "legisladores", "url": "https://directoriodirecto.org/"},
+    {"id": "clarin", "nombre": "Clarin", "categoria": "medios", "url": "https://www.clarin.com/"},
+    {"id": "lanacion", "nombre": "La Nacion", "categoria": "medios", "url": "https://www.lanacion.com.ar/"},
+    {"id": "infobae", "nombre": "Infobae", "categoria": "medios", "url": "https://www.infobae.com/"},
+    {"id": "pagina12", "nombre": "Pagina 12", "categoria": "medios", "url": "https://www.pagina12.com.ar/"},
+    {"id": "ambito", "nombre": "Ambito", "categoria": "medios", "url": "https://www.ambito.com/"},
+    {"id": "perfil", "nombre": "Perfil", "categoria": "medios", "url": "https://www.perfil.com/"},
+    {"id": "cronista", "nombre": "El Cronista", "categoria": "medios", "url": "https://www.cronista.com/"},
+]
+
+
 @app.post("/api/osint/busqueda")
 def busqueda_osint(req: BusquedaOsintRequest):
     """
@@ -258,6 +298,176 @@ def busqueda_osint(req: BusquedaOsintRequest):
             f'"{consulta}" "whois" OR "dominio"',
         ],
     }
+
+
+@app.post("/api/informe/comercial")
+def informe_comercial(req: InformeComercialRequest):
+    """
+    Ejecuta busquedas OSINT publicas y devuelve un informe estructurado con evidencia,
+    confianza y grafo. No evade captchas, logins, paywalls ni fuentes privadas.
+    """
+    nombre = req.nombre.strip()
+    if not nombre:
+        raise HTTPException(400, "El nombre es obligatorio")
+
+    normalizado = normalizar_identificador(req.identificador or "") if req.identificador else None
+    cuiles = (normalizado or {}).get("cuils_derivados", [])
+
+    evidencias = []
+    fuentes = []
+    hallazgos = []
+
+    # BCRA es la consulta oficial directa disponible sin captcha.
+    bcra_resultados = []
+    for cuil in cuiles[:3]:
+        res = consultar_deudas(cuil)
+        bcra_resultados.append(res)
+        evidencia = {
+            "fuente": "BCRA Central de Deudores",
+            "categoria": "crediticia",
+            "url": "https://api.bcra.gob.ar/CentralDeDeudores/v1.0",
+            "titulo": f"Consulta BCRA {cuil}",
+            "extracto": f"Estado: {res.get('estado')}; deudas: {len(res.get('deudas', []))}; cheques: {len(res.get('cheques_rechazados', []))}",
+            "coincidencia": "identificador",
+            "confianza": "alta" if res.get("estado") not in ("error", "timeout", "error_api") else "media",
+        }
+        evidencias.append(evidencia)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {
+            executor.submit(_buscar_fuente, nombre, source, req.max_resultados_por_fuente): source
+            for source in SOURCE_CATALOG
+        }
+        for future in as_completed(futures):
+            source = futures[future]
+            resultados = future.result()
+            fuentes.append({
+                "id": source["id"],
+                "nombre": source["nombre"],
+                "categoria": source["categoria"],
+                "url": source["url"],
+                "resultados": len(resultados),
+                "estado": "con_hallazgos" if resultados else "sin_hallazgos",
+            })
+            evidencias.extend(resultados)
+
+    categorias = {}
+    for ev in evidencias:
+        categorias.setdefault(ev["categoria"], 0)
+        categorias[ev["categoria"]] += 1
+
+    riesgo_crediticio = "indeterminado"
+    if bcra_resultados:
+        riesgos = [clasificar_riesgo(r) for r in bcra_resultados]
+        if "alto" in riesgos:
+            riesgo_crediticio = "alto"
+        elif "medio" in riesgos:
+            riesgo_crediticio = "medio"
+        elif "bajo" in riesgos:
+            riesgo_crediticio = "bajo"
+
+    hallazgos.append({
+        "titulo": "Identidad normalizada",
+        "valor": (normalizado or {}).get("formateado") or "sin identificador",
+        "confianza": "alta" if cuiles else "media",
+        "detalle": f"CUIL/CUIT derivados o informados: {len(cuiles)}",
+    })
+    hallazgos.append({
+        "titulo": "Riesgo crediticio BCRA",
+        "valor": riesgo_crediticio,
+        "confianza": "alta" if bcra_resultados else "baja",
+        "detalle": "Basado solo en API publica BCRA cuando hay CUIL/CUIT/DNI suficiente.",
+    })
+    hallazgos.append({
+        "titulo": "Cobertura OSINT",
+        "valor": f"{len(evidencias)} evidencias / {len(SOURCE_CATALOG)} fuentes",
+        "confianza": "media",
+        "detalle": "Fuentes abiertas consultadas via busqueda publica y API directa disponible.",
+    })
+
+    grafo = _construir_grafo(nombre, evidencias, cuiles, categorias)
+
+    return {
+        "target": {
+            "nombre": nombre,
+            "identificador": req.identificador,
+            "provincia": req.provincia,
+            "tipo": req.tipo,
+            "normalizado": normalizado,
+        },
+        "resumen": {
+            "fecha": datetime.now(timezone.utc).isoformat(),
+            "fuentes_consultadas": len(SOURCE_CATALOG) + (1 if cuiles else 0),
+            "evidencias": len(evidencias),
+            "categorias": categorias,
+            "riesgo_crediticio": riesgo_crediticio,
+        },
+        "hallazgos": hallazgos,
+        "fuentes": fuentes,
+        "evidencias": evidencias,
+        "grafo": grafo,
+        "limitaciones": [
+            "ARCA, ANSES, SSSalud, SRT, IGJ y algunos registros pueden requerir captcha, login o consulta manual para datos completos.",
+            "El informe separa evidencia encontrada de certeza plena; la certeza exige coincidencia por identificador oficial o dos fuentes independientes.",
+            "No se consultan bases privadas como Nosis ni fuentes con paywall o acceso restringido.",
+        ],
+    }
+
+
+def _dominio(url: str) -> str:
+    host = urlparse(url).netloc.lower()
+    return host[4:] if host.startswith("www.") else host
+
+
+def _buscar_fuente(nombre: str, source: dict, limite: int) -> list[dict]:
+    query = f'site:{_dominio(source["url"])} "{nombre}"'
+    url = "https://duckduckgo.com/html/?q=" + quote_plus(query)
+    evidencias = []
+    try:
+        headers = {"User-Agent": "Diagonales-Intelligence/1.0"}
+        r = httpx.get(url, headers=headers, timeout=8, follow_redirects=True)
+        if r.status_code >= 400:
+            return []
+        soup = BeautifulSoup(r.text, "html.parser")
+        for item in soup.select(".result")[:limite]:
+            title_el = item.select_one(".result__title a")
+            snippet_el = item.select_one(".result__snippet")
+            if not title_el:
+                continue
+            title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True))
+            href = title_el.get("href") or source["url"]
+            snippet = re.sub(r"\s+", " ", snippet_el.get_text(" ", strip=True)) if snippet_el else ""
+            confianza = "media" if nombre.lower() in (title + " " + snippet).lower() else "baja"
+            evidencias.append({
+                "fuente": source["nombre"],
+                "categoria": source["categoria"],
+                "url": href,
+                "titulo": title,
+                "extracto": snippet[:500],
+                "coincidencia": "nombre",
+                "confianza": confianza,
+            })
+    except Exception:
+        return []
+    return evidencias
+
+
+def _construir_grafo(nombre: str, evidencias: list[dict], cuiles: list[str], categorias: dict) -> dict:
+    nodes = [{"id": "target", "label": nombre, "type": "persona", "score": 100}]
+    edges = []
+    for cuil in cuiles[:3]:
+        node_id = f"id-{cuil}"
+        nodes.append({"id": node_id, "label": cuil, "type": "identificador", "score": 90})
+        edges.append({"from": "target", "to": node_id, "label": "identificador", "confidence": "alta"})
+    for cat, count in categorias.items():
+        node_id = f"cat-{cat}"
+        nodes.append({"id": node_id, "label": f"{cat} ({count})", "type": "categoria", "score": min(90, 30 + count * 10)})
+        edges.append({"from": "target", "to": node_id, "label": "evidencia", "confidence": "media"})
+    for i, ev in enumerate(evidencias[:30]):
+        node_id = f"ev-{i}"
+        nodes.append({"id": node_id, "label": ev["fuente"], "type": "fuente", "score": 60})
+        edges.append({"from": f"cat-{ev['categoria']}", "to": node_id, "label": ev["confianza"], "confidence": ev["confianza"]})
+    return {"nodes": nodes, "edges": edges}
     if req.tipo in ("empresa", "dominio"):
         dorks.update(extra)
 
