@@ -225,6 +225,66 @@ class ConsultaRequest(BaseModel):
     objetivo_id:   Optional[str] = None
 
 
+class BusquedaOsintRequest(BaseModel):
+    consulta: str
+    identificador: Optional[str] = None
+    tipo: str = "persona"
+
+
+@app.post("/api/osint/busqueda")
+def busqueda_osint(req: BusquedaOsintRequest):
+    """
+    Genera un tablero de busqueda web OSINT sin depender del entorno local.
+    """
+    consulta = req.consulta.strip()
+    if not consulta:
+        raise HTTPException(400, "La consulta es obligatoria")
+
+    normalizado = normalizar_identificador(req.identificador or "") if req.identificador else None
+    cuil_principal = None
+    if normalizado:
+        cuiles = normalizado.get("cuils_derivados") or []
+        cuil_principal = cuiles[0] if cuiles else None
+
+    dorks = generar_dorks(consulta, cuil_principal)
+    extra = {
+        "empresas": [
+            f'"{consulta}" CUIT OR sociedad OR directorio',
+            f'site:boletinoficial.gob.ar "{consulta}"',
+            f'site:compras.gob.ar "{consulta}"',
+        ],
+        "dominios": [
+            f'"{consulta}" site:.ar',
+            f'"{consulta}" "whois" OR "dominio"',
+        ],
+    }
+    if req.tipo in ("empresa", "dominio"):
+        dorks.update(extra)
+
+    def google_url(q: str) -> str:
+        from urllib.parse import quote_plus
+        return "https://www.google.com/search?q=" + quote_plus(q)
+
+    enlaces = [
+        {"titulo": "Google", "url": google_url(consulta), "tipo": "busqueda"},
+        {"titulo": "Google News", "url": "https://news.google.com/search?q=" + consulta.replace(" ", "+"), "tipo": "medios"},
+        {"titulo": "LinkedIn", "url": google_url(f'site:linkedin.com "{consulta}"'), "tipo": "redes"},
+        {"titulo": "X/Twitter", "url": google_url(f'site:x.com "{consulta}"'), "tipo": "redes"},
+        {"titulo": "Boletin Oficial", "url": google_url(f'site:boletinoficial.gob.ar "{consulta}"'), "tipo": "argentina"},
+        {"titulo": "Poder Judicial", "url": google_url(f'site:pjn.gov.ar "{consulta}"'), "tipo": "judicial"},
+        {"titulo": "Compras publicas", "url": google_url(f'site:compras.gob.ar "{consulta}"'), "tipo": "contrataciones"},
+    ]
+
+    return {
+        "consulta": consulta,
+        "tipo": req.tipo,
+        "normalizado": normalizado,
+        "dorks": dorks,
+        "enlaces": enlaces,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
 @app.post("/api/radiografia/identidad")
 def radiografia_identidad(req: ConsultaRequest, db: Session = Depends(get_db)):
     """
