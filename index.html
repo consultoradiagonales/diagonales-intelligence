@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscador OSINT | Diagonales Intelligence</title>
+<style>
+:root {
+  --bg: #f6f8fb;
+  --ink: #182230;
+  --muted: #667085;
+  --line: #d9e2ec;
+  --panel: #ffffff;
+  --accent: #155eef;
+  --accent2: #0e9384;
+  --danger: #b42318;
+  --soft: #edf3ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: Inter, Segoe UI, Arial, sans-serif;
+}
+.shell { max-width: 1180px; margin: 0 auto; padding: 28px 18px 44px; }
+.topbar {
+  display: flex; justify-content: space-between; gap: 18px; align-items: flex-start;
+  padding-bottom: 18px; border-bottom: 1px solid var(--line);
+}
+h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 4vw, 2.8rem); letter-spacing: 0; }
+.lead { margin: 0; color: var(--muted); max-width: 760px; line-height: 1.5; }
+.status {
+  min-width: 180px; padding: 10px 12px; border: 1px solid var(--line);
+  background: var(--panel); border-radius: 8px; font-size: .85rem; color: var(--muted);
+}
+.grid { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 18px; margin-top: 20px; }
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 18px; box-shadow: 0 8px 24px rgba(16,24,40,.05);
+}
+label { display: block; font-size: .8rem; font-weight: 700; color: #344054; margin: 14px 0 6px; }
+input, select {
+  width: 100%; height: 42px; border: 1px solid var(--line); border-radius: 7px;
+  padding: 0 12px; font-size: .95rem; background: white; color: var(--ink);
+}
+input:focus, select:focus { outline: 2px solid #bfd7ff; border-color: var(--accent); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+button, .button {
+  border: 0; border-radius: 7px; min-height: 40px; padding: 0 14px;
+  font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex;
+  align-items: center; justify-content: center; gap: 8px; font-size: .9rem;
+}
+.primary { background: var(--accent); color: white; }
+.secondary { background: #eef4ff; color: #1849a9; border: 1px solid #c7d7fe; }
+.quiet { background: #f2f4f7; color: #344054; border: 1px solid var(--line); }
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.tab {
+  background: #f8fafc; border: 1px solid var(--line); color: #475467;
+  min-height: 36px; padding: 0 12px;
+}
+.tab.active { background: var(--soft); color: #1849a9; border-color: #b2ccff; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.metric { background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.metric span { display: block; color: var(--muted); font-size: .78rem; margin-bottom: 4px; }
+.metric strong { font-size: 1rem; }
+.results { display: grid; gap: 12px; }
+.card { border: 1px solid var(--line); background: white; border-radius: 8px; padding: 14px; }
+.card-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 10px; }
+.card h3 { margin: 0; font-size: 1rem; }
+.badge { border-radius: 999px; background: #ecfdf3; color: #067647; padding: 4px 9px; font-size: .75rem; font-weight: 700; }
+.link-list { display: grid; gap: 8px; }
+.link-item {
+  display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+  padding: 10px; border-radius: 7px; background: #f8fafc; border: 1px solid #eef2f6;
+}
+.query { font-family: Consolas, monospace; color: #344054; word-break: break-word; font-size: .86rem; }
+.open { color: var(--accent); font-weight: 700; text-decoration: none; white-space: nowrap; }
+.empty { color: var(--muted); padding: 34px; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+.error { color: var(--danger); background: #fffbfa; border-color: #fecdca; }
+.footnote { color: var(--muted); font-size: .8rem; line-height: 1.45; margin-top: 14px; }
+@media (max-width: 860px) {
+  .topbar, .grid { display: block; }
+  .status { margin-top: 14px; }
+  .summary { grid-template-columns: 1fr 1fr; }
+  .panel { margin-top: 14px; }
+}
+@media (max-width: 520px) {
+  .row, .summary { grid-template-columns: 1fr; }
+  .link-item { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="topbar">
+    <div>
+      <h1>Buscador OSINT Diagonales</h1>
+      <p class="lead">Ejecuta búsquedas web, dorks argentinos y radiografía básica desde una interfaz publicable. Funciona con API propia si está desplegada y también como frontend estático para GitHub Pages.</p>
+    </div>
+    <div class="status" id="apiStatus">API: detectando...</div>
+  </section>
+
+  <section class="grid">
+    <aside class="panel">
+      <label for="consulta">Nombre, empresa, dominio o término</label>
+      <input id="consulta" placeholder="Ej: Consultora Diagonales">
+
+      <div class="row">
+        <div>
+          <label for="tipo">Tipo</label>
+          <select id="tipo">
+            <option value="persona">Persona</option>
+            <option value="empresa">Empresa</option>
+            <option value="dominio">Dominio</option>
+            <option value="politico">Político / funcionario</option>
+          </select>
+        </div>
+        <div>
+          <label for="identificador">DNI / CUIL / CUIT</label>
+          <input id="identificador" placeholder="Opcional">
+        </div>
+      </div>
+
+      <label for="apiBase">URL de API desplegada</label>
+      <input id="apiBase" placeholder="https://tu-api.onrender.com">
+
+      <div class="actions">
+        <button class="primary" onclick="ejecutarBusqueda()">Buscar</button>
+        <button class="secondary" onclick="abrirTodo()">Abrir enlaces</button>
+        <button class="quiet" onclick="limpiar()">Limpiar</button>
+      </div>
+
+      <p class="footnote">Para usarlo fuera de tu PC, desplegá la API FastAPI y pegá su URL arriba. En GitHub Pages seguirá generando enlaces OSINT aunque la API no esté disponible.</p>
+    </aside>
+
+    <section class="panel">
+      <div class="tabs">
+        <button class="tab active" data-tab="todos" onclick="setTab('todos')">Todos</button>
+        <button class="tab" data-tab="general" onclick="setTab('general')">General</button>
+        <button class="tab" data-tab="judiciales" onclick="setTab('judiciales')">Judicial</button>
+        <button class="tab" data-tab="patrimoniales" onclick="setTab('patrimoniales')">Patrimonial</button>
+        <button class="tab" data-tab="redes_sociales" onclick="setTab('redes_sociales')">Redes</button>
+        <button class="tab" data-tab="medios" onclick="setTab('medios')">Medios</button>
+      </div>
+
+      <div class="summary" id="summary">
+        <div class="metric"><span>Consulta</span><strong>-</strong></div>
+        <div class="metric"><span>Dorks</span><strong>0</strong></div>
+        <div class="metric"><span>Enlaces</span><strong>0</strong></div>
+        <div class="metric"><span>Modo</span><strong>Web</strong></div>
+      </div>
+
+      <div id="resultados" class="results">
+        <div class="empty">Ingresá una consulta y ejecutá la búsqueda.</div>
+      </div>
+    </section>
+  </section>
+</main>
+
+<script>
+const state = { data: null, tab: 'todos', links: [] };
+const $ = id => document.getElementById(id);
+
+function apiRoot() {
+  const manual = $('apiBase').value.trim().replace(/\/$/, '');
+  if (manual) return manual;
+  if (!location.protocol.startsWith('http')) return '';
+  if (location.hostname.includes('github.io')) return '';
+  return location.origin;
+}
+
+function googleUrl(q) {
+  return 'https://www.google.com/search?q=' + encodeURIComponent(q);
+}
+
+function fallbackData(consulta, tipo, identificador) {
+  const quoted = `"${consulta}"`;
+  const base = identificador ? `${quoted} OR "${identificador}"` : quoted;
+  const dorks = {
+    general: [`${quoted} Argentina`, `${quoted} político OR candidato OR funcionario`, `${quoted} empresa OR sociedad OR CUIT`],
+    judiciales: [`site:pjn.gov.ar ${quoted}`, `site:csjn.gov.ar ${quoted}`, `${quoted} causa judicial OR imputado OR procesado`],
+    patrimoniales: [`site:boletinoficial.gob.ar ${base}`, `${quoted} licitación OR contratación OR compras`, `site:compras.gob.ar ${quoted}`],
+    redes_sociales: [`site:x.com ${quoted}`, `site:instagram.com ${quoted}`, `site:facebook.com ${quoted}`, `site:linkedin.com ${quoted}`],
+    medios: [`site:infobae.com ${quoted}`, `site:clarin.com ${quoted}`, `site:lanacion.com.ar ${quoted}`, `site:pagina12.com.ar ${quoted}`]
+  };
+  if (tipo === 'empresa' || tipo === 'dominio') {
+    dorks.empresas = [`${quoted} CUIT OR sociedad OR directorio`, `site:boletinoficial.gob.ar ${quoted}`, `site:compras.gob.ar ${quoted}`];
+  }
+  return {
+    consulta, tipo, normalizado: null, dorks,
+    enlaces: [
+      { titulo: 'Google', url: googleUrl(consulta), tipo: 'busqueda' },
+      { titulo: 'Google News', url: 'https://news.google.com/search?q=' + encodeURIComponent(consulta), tipo: 'medios' },
+      { titulo: 'LinkedIn', url: googleUrl(`site:linkedin.com ${quoted}`), tipo: 'redes' },
+      { titulo: 'Boletín Oficial', url: googleUrl(`site:boletinoficial.gob.ar ${quoted}`), tipo: 'argentina' },
+      { titulo: 'Poder Judicial', url: googleUrl(`site:pjn.gov.ar ${quoted}`), tipo: 'judicial' }
+    ],
+    modo: 'Web'
+  };
+}
+
+async function checkApi() {
+  const root = apiRoot();
+  if (!root) {
+    $('apiStatus').textContent = 'API: modo estático';
+    return false;
+  }
+  try {
+    const res = await fetch(root + '/api/stats', { method: 'GET' });
+    $('apiStatus').textContent = res.ok ? 'API: conectada' : 'API: sin respuesta completa';
+    return res.ok;
+  } catch {
+    $('apiStatus').textContent = 'API: modo estático';
+    return false;
+  }
+}
+
+async function ejecutarBusqueda() {
+  const consulta = $('consulta').value.trim();
+  const tipo = $('tipo').value;
+  const identificador = $('identificador').value.trim();
+  if (!consulta) {
+    renderError('La consulta es obligatoria.');
+    return;
+  }
+
+  $('resultados').innerHTML = '<div class="empty">Procesando búsqueda...</div>';
+  const root = apiRoot();
+  let data = null;
+  if (root) {
+    try {
+      const res = await fetch(root + '/api/osint/busqueda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consulta, tipo, identificador: identificador || null })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      data = await res.json();
+      data.modo = 'API';
+      $('apiStatus').textContent = 'API: conectada';
+    } catch {
+      data = fallbackData(consulta, tipo, identificador);
+      $('apiStatus').textContent = 'API: modo estático';
+    }
+  } else {
+    data = fallbackData(consulta, tipo, identificador);
+  }
+  state.data = data;
+  render();
+}
+
+function setTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+  render();
+}
+
+function allDorks(data) {
+  return Object.entries(data?.dorks || {}).flatMap(([cat, items]) => items.map(q => ({ cat, q, url: googleUrl(q) })));
+}
+
+function render() {
+  const data = state.data;
+  if (!data) return;
+  const dorks = allDorks(data).filter(x => state.tab === 'todos' || x.cat === state.tab);
+  state.links = [...(data.enlaces || []).map(x => x.url), ...dorks.map(x => x.url)];
+
+  $('summary').innerHTML = `
+    <div class="metric"><span>Consulta</span><strong>${escapeHtml(data.consulta)}</strong></div>
+    <div class="metric"><span>Dorks</span><strong>${allDorks(data).length}</strong></div>
+    <div class="metric"><span>Enlaces</span><strong>${(data.enlaces || []).length}</strong></div>
+    <div class="metric"><span>Modo</span><strong>${data.modo || 'API'}</strong></div>
+  `;
+
+  const cards = [];
+  if (state.tab === 'todos') {
+    cards.push(card('Accesos directos', 'fuentes', (data.enlaces || []).map(x => ({ text: x.titulo, url: x.url }))));
+  }
+  const grouped = dorks.reduce((acc, item) => {
+    (acc[item.cat] ||= []).push({ text: item.q, url: item.url });
+    return acc;
+  }, {});
+  Object.entries(grouped).forEach(([cat, items]) => cards.push(card(labelCat(cat), cat, items)));
+  $('resultados').innerHTML = cards.join('') || '<div class="empty">No hay resultados para esta pestaña.</div>';
+}
+
+function card(title, badge, items) {
+  return `<article class="card">
+    <div class="card-head"><h3>${escapeHtml(title)}</h3><span class="badge">${escapeHtml(badge)}</span></div>
+    <div class="link-list">
+      ${items.map(item => `<div class="link-item"><div class="query">${escapeHtml(item.text)}</div><a class="open" href="${item.url}" target="_blank" rel="noopener">Abrir</a></div>`).join('')}
+    </div>
+  </article>`;
+}
+
+function labelCat(cat) {
+  return ({ general: 'General', judiciales: 'Judiciales', patrimoniales: 'Patrimoniales', redes_sociales: 'Redes sociales', medios: 'Medios', empresas: 'Empresas', dominios: 'Dominios' })[cat] || cat;
+}
+
+function abrirTodo() {
+  const unique = [...new Set(state.links)].slice(0, 12);
+  unique.forEach(url => window.open(url, '_blank', 'noopener'));
+}
+
+function limpiar() {
+  $('consulta').value = '';
+  $('identificador').value = '';
+  state.data = null;
+  state.links = [];
+  $('summary').innerHTML = '<div class="metric"><span>Consulta</span><strong>-</strong></div><div class="metric"><span>Dorks</span><strong>0</strong></div><div class="metric"><span>Enlaces</span><strong>0</strong></div><div class="metric"><span>Modo</span><strong>Web</strong></div>';
+  $('resultados').innerHTML = '<div class="empty">Ingresá una consulta y ejecutá la búsqueda.</div>';
+}
+
+function renderError(msg) {
+  $('resultados').innerHTML = `<div class="empty error">${escapeHtml(msg)}</div>`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  checkApi();
+  $('consulta').addEventListener('keydown', e => { if (e.key === 'Enter') ejecutarBusqueda(); });
+  $('apiBase').addEventListener('change', checkApi);
+});
+</script>
+</body>
+</html>
