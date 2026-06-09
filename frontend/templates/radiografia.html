@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radiografía — Diagonales Intelligence</title>
+<style>
+  :root {
+    --bg: #0d0d0f; --surface: #16161a; --surface2: #1e1e26;
+    --border: #2a2a3a; --accent: #7c3aed; --accent2: #a855f7;
+    --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+    --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+    --font: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem;
+        display: flex; align-items: center; gap: 2rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-weight: 700; font-size: 1.1rem; color: var(--accent2); }
+  .nav-logo span { color: var(--text3); font-weight: 400; }
+  nav a { color: var(--text2); text-decoration: none; font-size: .9rem; }
+  nav a:hover { color: var(--text); }
+  .btn { background: var(--accent); color: #fff; border: none; padding: .45rem 1rem;
+         border-radius: 6px; font-size: .85rem; cursor: pointer; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+  .btn-sm { padding: .3rem .7rem; font-size: .8rem; }
+  .btn-danger { background: #7f1d1d; color: #fca5a5; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  /* SEARCH BAR */
+  .search-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+                  padding: 1.5rem; margin-bottom: 2rem; }
+  .search-panel h2 { font-size: 1rem; margin-bottom: 1rem; }
+  .search-row { display: flex; gap: .75rem; }
+  .search-row input { flex: 1; background: var(--bg); border: 1px solid var(--border); color: var(--text);
+                      padding: .6rem 1rem; border-radius: 8px; font-size: .9rem; outline: none; }
+  .search-row input:focus { border-color: var(--accent); }
+
+  /* TABS */
+  .tabs { display: flex; gap: .25rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .tab { padding: .6rem 1.1rem; font-size: .88rem; color: var(--text3); cursor: pointer;
+         border-bottom: 2px solid transparent; transition: color .15s; }
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+  /* PANELS */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* IDENTITY CARD */
+  .id-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .id-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+  .id-card .label { font-size: .72rem; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .3rem; }
+  .id-card .value { font-size: .95rem; font-weight: 500; }
+  .id-card .value.mono { font-family: monospace; font-size: .9rem; }
+
+  /* BCRA */
+  .bcra-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+               padding: 1.25rem; margin-bottom: 1rem; }
+  .bcra-header { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+  .risk-badge { padding: .25rem .75rem; border-radius: 20px; font-size: .8rem; font-weight: 600; }
+  .risk-bajo  { background: #14532d44; color: var(--green); border: 1px solid #22c55e44; }
+  .risk-medio { background: #78350f44; color: var(--yellow); border: 1px solid #eab30844; }
+  .risk-alto  { background: #7f1d1d44; color: var(--red); border: 1px solid #ef444444; }
+  .risk-indet { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+
+  /* DEUDA TABLE */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+  th { background: var(--surface2); color: var(--text3); font-weight: 500; font-size: .73rem;
+       text-transform: uppercase; letter-spacing: .05em; padding: .7rem 1rem; text-align: left; }
+  td { padding: .65rem 1rem; border-top: 1px solid var(--border); color: var(--text2); }
+  tr:hover td { background: var(--surface2)80; }
+
+  /* DORKS */
+  .dork-group { margin-bottom: 1.25rem; }
+  .dork-group h4 { font-size: .8rem; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6rem; }
+  .dork-item { display: flex; align-items: center; gap: .75rem; background: var(--surface); border: 1px solid var(--border);
+               border-radius: 6px; padding: .5rem .75rem; margin-bottom: .4rem; font-family: monospace;
+               font-size: .82rem; color: var(--text2); }
+  .dork-item a { margin-left: auto; font-size: .75rem; color: var(--accent2); text-decoration: none; white-space: nowrap; }
+
+  /* HUMOR SOCIAL */
+  .sent-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .sent-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+  .sent-pct { font-size: 2rem; font-weight: 700; }
+  .sent-pct.pos { color: var(--green); }
+  .sent-pct.neg { color: var(--red); }
+  .sent-pct.neu { color: var(--text3); }
+  .sent-label { font-size: .78rem; color: var(--text3); margin-top: .25rem; }
+
+  .tag { display: inline-block; padding: .2rem .55rem; border-radius: 4px; font-size: .75rem; font-weight: 500; }
+  .tag-pos { background: #22c55e22; color: var(--green); }
+  .tag-neg { background: #ef444422; color: var(--red); }
+  .tag-neu { background: #64748b22; color: var(--text3); }
+
+  .empty { text-align: center; color: var(--text3); padding: 2.5rem; font-size: .88rem; }
+  .loading { display: flex; justify-content: center; padding: 2rem; }
+  .spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--accent2);
+             border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .section-title { font-size: .95rem; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Diagonales <span>Intelligence</span></div>
+  <a href="/">Dashboard</a>
+  <a href="/radiografia" style="color:var(--text)">Radiografía</a>
+</nav>
+
+<div class="container">
+
+  <!-- Search panel -->
+  <div class="search-panel">
+    <h2>Radiografía de persona o empresa</h2>
+    <div class="search-row">
+      <input id="inp-nombre" placeholder="Nombre completo (ej: Axel Kicillof)" />
+      <input id="inp-id" placeholder="DNI, CUIT o CUIL" style="max-width:220px" />
+      <button class="btn" onclick="ejecutarRadiografia()">Analizar</button>
+      <button class="btn btn-ghost" onclick="limpiar()">Limpiar</button>
+    </div>
+  </div>
+
+  <!-- Resultado -->
+  <div id="resultado" style="display:none">
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('identidad')">Identidad</div>
+      <div class="tab" onclick="switchTab('bcra')">BCRA / Crédito</div>
+      <div class="tab" onclick="switchTab('humor')">Humor Social</div>
+      <div class="tab" onclick="switchTab('dorks')">Búsquedas OSINT</div>
+    </div>
+
+    <!-- Tab: Identidad -->
+    <div class="tab-content active" id="tab-identidad">
+      <div class="id-grid" id="id-cards"></div>
+      <div id="variantes-cuil"></div>
+    </div>
+
+    <!-- Tab: BCRA -->
+    <div class="tab-content" id="tab-bcra">
+      <div id="bcra-contenido"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- Tab: Humor social -->
+    <div class="tab-content" id="tab-humor">
+      <div id="humor-contenido"><div class="empty">Sin datos de humor social para este objetivo.</div></div>
+    </div>
+
+    <!-- Tab: Dorks -->
+    <div class="tab-content" id="tab-dorks">
+      <div id="dorks-contenido"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const API = '';
+let datosActuales = null;
+
+// Leer query param ?id=xxx al cargar
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(location.search);
+  const objId = params.get('id');
+  if (objId) cargarHumorPorObjetivoId(objId);
+});
+
+async function ejecutarRadiografia() {
+  const nombre = document.getElementById('inp-nombre').value.trim();
+  const id     = document.getElementById('inp-id').value.trim();
+
+  if (!nombre && !id) return alert('Ingresá al menos un nombre o identificador.');
+
+  document.getElementById('resultado').style.display = 'block';
+  document.getElementById('bcra-contenido').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  document.getElementById('id-cards').innerHTML = '';
+
+  try {
+    const r = await fetch(`${API}/api/radiografia/identidad`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ identificador: id || '0', nombre: nombre || null })
+    });
+    datosActuales = await r.json();
+    renderIdentidad(datosActuales);
+    renderBCRA(datosActuales);
+    if (nombre) renderDorks(datosActuales.dorks);
+  } catch(e) {
+    document.getElementById('bcra-contenido').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+function renderIdentidad(d) {
+  const n = d.normalizado;
+  const cards = [
+    { label: 'Tipo documento', value: n.tipo?.toUpperCase() || '—' },
+    { label: 'Valor normalizado', value: n.valor_limpio || '—', mono: true },
+    { label: 'Formateado', value: n.formateado || '—' },
+    { label: 'Válido', value: n.valido ? 'Sí' : 'No' },
+    { label: 'CUIL/CUIT derivados', value: (n.cuils_derivados||[]).length + ' variantes' },
+    { label: 'Riesgo crediticio', value: d.riesgo_crediticio?.toUpperCase() || '—' },
+  ];
+
+  document.getElementById('id-cards').innerHTML = cards.map(c => `
+    <div class="id-card">
+      <div class="label">${c.label}</div>
+      <div class="value ${c.mono?'mono':''}">${c.value}</div>
+    </div>`).join('');
+
+  if (n.variantes?.length) {
+    document.getElementById('variantes-cuil').innerHTML = `
+      <div class="table-wrap">
+        <table><thead><tr><th>CUIL/CUIT</th><th>Formateado</th><th>Tipo</th><th>Confianza</th></tr></thead>
+        <tbody>${n.variantes.map(v=>`
+          <tr><td style="font-family:monospace">${v.cuil}</td>
+              <td style="font-family:monospace">${v.cuil_formateado}</td>
+              <td>${v.tipo}</td>
+              <td>${v.confianza}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>`;
+  }
+}
+
+function renderBCRA(d) {
+  const cont = document.getElementById('bcra-contenido');
+  if (!d.bcra?.length) { cont.innerHTML = '<div class="empty">No se realizaron consultas BCRA.</div>'; return; }
+
+  const riskClass = { bajo:'risk-bajo', medio:'risk-medio', alto:'risk-alto' }[d.riesgo_crediticio] || 'risk-indet';
+
+  cont.innerHTML = `
+    <div class="bcra-card">
+      <div class="bcra-header">
+        <strong>Resultado consolidado</strong>
+        <span class="risk-badge ${riskClass}">Riesgo ${d.riesgo_crediticio?.toUpperCase()}</span>
+      </div>
+      ${d.bcra.map(b => `
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)">
+          <div style="display:flex;gap:.75rem;align-items:center;margin-bottom:.75rem">
+            <code style="font-size:.85rem">${b.identificacion}</code>
+            <span class="tag ${b.estado==='sin_deudas'?'tag-pos':b.estado==='con_deudas'?'tag-neg':'tag-neu'}">${b.estado}</span>
+            <span style="font-size:.78rem;color:var(--text3)">${b.timestamp?.slice(0,19)}</span>
+          </div>
+          ${b.deudas?.length ? `
+            <div class="table-wrap">
+              <table><thead><tr><th>Entidad</th><th>Situación</th><th>Monto</th><th>Período</th><th>Atraso (días)</th></tr></thead>
+              <tbody>${b.deudas.map(dd=>`
+                <tr>
+                  <td>${dd.entidad||'—'}</td>
+                  <td><span class="tag ${dd.situacion>=4?'tag-neg':dd.situacion>=2?'tag-neu':'tag-pos'}">${dd.situacion||'—'}</span></td>
+                  <td>$${(dd.monto||0).toLocaleString('es-AR')}</td>
+                  <td>${dd.periodo||'—'}</td>
+                  <td>${dd.diasAtrasoPago||0}</td>
+                </tr>`).join('')}
+              </tbody></table>
+            </div>` : '<div style="color:var(--green);font-size:.88rem">Sin deudas registradas en BCRA.</div>'}
+          ${b.cheques_rechazados?.length ? `
+            <div style="margin-top:.75rem"><strong style="font-size:.85rem">Cheques rechazados:</strong>
+              ${b.cheques_rechazados.map(c=>`<div style="font-size:.82rem;color:var(--text2);margin-top:.4rem">
+                ${c.causal} — Entidad: ${c.entidad} — $${(c.monto||0).toLocaleString()} — ${c.fecha}</div>`).join('')}
+            </div>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
+
+function renderDorks(dorks) {
+  if (!dorks) return;
+  const cont = document.getElementById('dorks-contenido');
+  const labels = { general:'General', judiciales:'Judicial', patrimoniales:'Patrimonial/Licitaciones',
+                   redes_sociales:'Redes sociales', medios:'Medios de comunicación' };
+  cont.innerHTML = Object.entries(dorks).map(([cat, queries]) => `
+    <div class="dork-group">
+      <h4>${labels[cat] || cat}</h4>
+      ${queries.map(q => `
+        <div class="dork-item">
+          <span>${q}</span>
+          <a href="https://www.google.com/search?q=${encodeURIComponent(q)}" target="_blank">Buscar →</a>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+async function cargarHumorPorObjetivoId(objId) {
+  document.getElementById('resultado').style.display = 'block';
+  switchTab('humor');
+
+  try {
+    const r = await fetch(`${API}/api/humor-social/${objId}?dias=14`);
+    const d = await r.json();
+    const s = d.sentimiento_global;
+    const arts = await fetch(`${API}/api/humor-social/${objId}/articulos-recientes?limite=30`).then(r=>r.json());
+    const coms = await fetch(`${API}/api/humor-social/${objId}/comentarios-calientes?limite=10`).then(r=>r.json());
+
+    document.getElementById('humor-contenido').innerHTML = `
+      <div class="sent-summary">
+        <div class="sent-card"><div class="sent-pct pos">${s.positivo}%</div><div class="sent-label">Positivo</div></div>
+        <div class="sent-card"><div class="sent-pct neg">${s.negativo}%</div><div class="sent-label">Negativo</div></div>
+        <div class="sent-card"><div class="sent-pct neu">${s.neutro}%</div><div class="sent-label">Neutro</div></div>
+      </div>
+      <p style="color:var(--text3);font-size:.85rem;margin-bottom:1.5rem">${d.total_menciones} menciones · últimos 14 días</p>
+
+      <div class="section-header"><div class="section-title">Artículos recientes</div></div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Fuente</th><th>Título</th><th>Sentimiento</th><th>Fecha</th></tr></thead>
+        <tbody>${arts.map(a=>`
+          <tr>
+            <td style="white-space:nowrap;font-size:.8rem">${a.fuente||''}</td>
+            <td><a href="${a.url||'#'}" target="_blank" style="color:var(--text2);text-decoration:none">${a.titulo||''}</a></td>
+            <td>${a.sentimiento?`<span class="tag tag-${a.sentimiento.toLowerCase()}">${a.sentimiento}</span>`:'—'}</td>
+            <td style="font-size:.8rem;white-space:nowrap">${(a.fecha||'').slice(0,10)}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>
+
+      ${coms.length ? `
+        <div class="section-header" style="margin-top:1.5rem"><div class="section-title">Comentarios negativos destacados</div></div>
+        ${coms.map(c=>`
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:.6rem">
+            <div style="font-size:.88rem;color:var(--text2);line-height:1.5;margin-bottom:.5rem">${c.texto}</div>
+            <div style="font-size:.75rem;color:var(--text3)">${c.autor||'Anón'} · ${c.fuente||''} · ${c.likes} likes · score: ${c.score_negativo}</div>
+          </div>`).join('')}` : ''}`;
+  } catch(e) {
+    document.getElementById('humor-contenido').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['identidad','bcra','humor','dorks'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+}
+
+function limpiar() {
+  document.getElementById('inp-nombre').value = '';
+  document.getElementById('inp-id').value = '';
+  document.getElementById('resultado').style.display = 'none';
+  datosActuales = null;
+}
+</script>
+</body>
+</html>

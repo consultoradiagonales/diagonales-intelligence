@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagonales Intelligence</title>
+<style>
+  :root {
+    --bg: #0d0d0f; --surface: #16161a; --surface2: #1e1e26;
+    --border: #2a2a3a; --accent: #7c3aed; --accent2: #a855f7;
+    --text: #e2e8f0; --text2: #94a3b8; --text3: #64748b;
+    --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+    --font: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  /* NAV */
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem;
+        display: flex; align-items: center; gap: 2rem; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-weight: 700; font-size: 1.1rem; color: var(--accent2); letter-spacing: .5px; }
+  .nav-logo span { color: var(--text3); font-weight: 400; }
+  nav a { color: var(--text2); text-decoration: none; font-size: .9rem; transition: color .15s; }
+  nav a:hover, nav a.active { color: var(--text); }
+  .nav-right { margin-left: auto; display: flex; gap: 1rem; align-items: center; }
+  .btn { background: var(--accent); color: #fff; border: none; padding: .45rem 1rem;
+         border-radius: 6px; font-size: .85rem; cursor: pointer; transition: opacity .15s; }
+  .btn:hover { opacity: .85; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+  .btn-sm { padding: .3rem .7rem; font-size: .8rem; }
+
+  /* LAYOUT */
+  .layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 56px); }
+  aside { background: var(--surface); border-right: 1px solid var(--border); padding: 1.5rem 1rem; }
+  main { padding: 2rem; overflow-y: auto; }
+
+  /* SIDEBAR */
+  .sidebar-title { font-size: .72rem; font-weight: 600; text-transform: uppercase;
+                   letter-spacing: .08em; color: var(--text3); margin-bottom: .75rem; padding: 0 .5rem; }
+  .sidebar-item { display: flex; align-items: center; gap: .6rem; padding: .55rem .75rem;
+                  border-radius: 6px; cursor: pointer; color: var(--text2); font-size: .88rem;
+                  transition: background .12s, color .12s; margin-bottom: 2px; }
+  .sidebar-item:hover { background: var(--surface2); color: var(--text); }
+  .sidebar-item.active { background: var(--accent)22; color: var(--accent2); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot.verde { background: var(--green); }
+  .dot.rojo  { background: var(--red); }
+  .dot.gris  { background: var(--text3); }
+
+  /* CARDS */
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; }
+  .card-label { font-size: .75rem; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .4rem; }
+  .card-value { font-size: 1.8rem; font-weight: 700; line-height: 1.1; }
+  .card-sub { font-size: .78rem; color: var(--text3); margin-top: .3rem; }
+  .card.verde .card-value { color: var(--green); }
+  .card.rojo  .card-value { color: var(--red); }
+  .card.morado .card-value { color: var(--accent2); }
+
+  /* SENTIMENT BAR */
+  .sent-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: .5rem 0; }
+  .sent-bar .pos { background: var(--green); }
+  .sent-bar .neg { background: var(--red); }
+  .sent-bar .neu { background: var(--text3); }
+  .sent-labels { display: flex; gap: 1.5rem; font-size: .78rem; color: var(--text2); }
+  .sent-labels span { display: flex; align-items: center; gap: .3rem; }
+  .sent-labels .pos { color: var(--green); }
+  .sent-labels .neg { color: var(--red); }
+
+  /* TABLE */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+  th { background: var(--surface2); color: var(--text3); font-weight: 500; font-size: .75rem;
+       text-transform: uppercase; letter-spacing: .05em; padding: .75rem 1rem; text-align: left; }
+  td { padding: .7rem 1rem; border-top: 1px solid var(--border); color: var(--text2); vertical-align: top; }
+  tr:hover td { background: var(--surface2)80; }
+
+  /* TAGS */
+  .tag { display: inline-block; padding: .2rem .55rem; border-radius: 4px; font-size: .75rem; font-weight: 500; }
+  .tag-pos { background: #22c55e22; color: var(--green); }
+  .tag-neg { background: #ef444422; color: var(--red); }
+  .tag-neu { background: #64748b22; color: var(--text3); }
+  .tag-rss { background: #3b82f622; color: #60a5fa; }
+  .tag-yt  { background: #ef444422; color: #f87171; }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .section-title { font-size: 1rem; font-weight: 600; }
+  .section-sub { font-size: .82rem; color: var(--text3); margin-top: .15rem; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: #000a; z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px;
+           padding: 1.75rem; width: 500px; max-width: 95vw; }
+  .modal h3 { margin-bottom: 1.25rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: .82rem; color: var(--text2); margin-bottom: .4rem; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; padding: .55rem .8rem; font-size: .88rem; outline: none; }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-row { display: flex; gap: .75rem; }
+  .modal-actions { display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+  /* LOADER */
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border);
+             border-top-color: var(--accent2); border-radius: 50%; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { text-align: center; color: var(--text3); padding: 3rem; font-size: .9rem; }
+  .section-sep { margin: 2rem 0; border: none; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Diagonales <span>Intelligence</span></div>
+  <a href="/" class="active">Dashboard</a>
+  <a href="/radiografia">Radiografía</a>
+  <div class="nav-right">
+    <button class="btn btn-ghost btn-sm" onclick="triggerScraping()">Actualizar datos</button>
+    <button class="btn btn-sm" onclick="openModal()">+ Nuevo objetivo</button>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside>
+    <div class="sidebar-title">Objetivos activos</div>
+    <div id="sidebar-objetivos"><div class="spinner" style="margin:.5rem auto"></div></div>
+    <hr class="section-sep">
+    <div class="sidebar-title">Fuentes</div>
+    <div class="sidebar-item"><span>📰</span> RSS Noticias</div>
+    <div class="sidebar-item"><span>▶️</span> YouTube</div>
+    <div class="sidebar-item" style="opacity:.4"><span>🐦</span> Twitter/X <small style="margin-left:auto;font-size:.72rem">pronto</small></div>
+    <div class="sidebar-item" style="opacity:.4"><span>📘</span> Facebook <small style="margin-left:auto;font-size:.72rem">pronto</small></div>
+  </aside>
+
+  <main>
+    <!-- Stats globales -->
+    <div class="grid-4" id="stats-globales">
+      <div class="card morado"><div class="card-label">Artículos totales</div><div class="card-value">—</div></div>
+      <div class="card"><div class="card-label">Comentarios</div><div class="card-value">—</div></div>
+      <div class="card verde"><div class="card-label">Analizados</div><div class="card-value">—</div></div>
+      <div class="card"><div class="card-label">Objetivos activos</div><div class="card-value">—</div></div>
+    </div>
+
+    <!-- Humor social por objetivo -->
+    <div id="humor-social-panels"></div>
+
+    <!-- Artículos recientes -->
+    <div class="section-header" style="margin-top:2rem">
+      <div><div class="section-title">Artículos recientes</div>
+           <div class="section-sub">Últimas noticias recolectadas con sentimiento analizado</div></div>
+      <select id="filtro-objetivo" style="background:var(--surface);border:1px solid var(--border);color:var(--text);padding:.4rem .75rem;border-radius:6px;font-size:.85rem" onchange="cargarArticulos()">
+        <option value="">Todos los objetivos</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th>Objetivo</th><th>Fuente</th><th>Título</th><th>Sentimiento</th><th>Fecha</th>
+      </tr></thead>
+      <tbody id="tabla-articulos"><tr><td colspan="5" class="empty">Cargando...</td></tr></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Modal nuevo objetivo -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>Nuevo objetivo de rastreo</h3>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Nombre completo</label>
+        <input id="f-nombre" placeholder="Ej: Axel Kicillof">
+      </div>
+      <div class="form-group" style="width:140px">
+        <label>Tipo</label>
+        <select id="f-tipo">
+          <option value="candidato">Candidato</option>
+          <option value="funcionario">Funcionario</option>
+          <option value="empresa">Empresa</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>ID único (slug)</label>
+      <input id="f-id" placeholder="Ej: kicillof_axel">
+    </div>
+    <div class="form-group">
+      <label>Keywords (separadas por coma)</label>
+      <input id="f-kw" placeholder="Kicillof, Axel, PBA, gobernador">
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Twitter/X (sin @)</label>
+        <input id="f-tw" placeholder="Kicillof">
+      </div>
+      <div class="form-group" style="flex:1">
+        <label>Instagram (sin @)</label>
+        <input id="f-ig" placeholder="axelkicillof">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn" onclick="crearObjetivo()">Crear y activar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let objetivos = [];
+
+async function init() {
+  await Promise.all([cargarStats(), cargarObjetivos()]);
+}
+
+async function cargarStats() {
+  try {
+    const r = await fetch(`${API}/api/stats`);
+    const d = await r.json();
+    const cards = document.querySelectorAll('#stats-globales .card-value');
+    cards[0].textContent = d.total_contenido?.toLocaleString('es-AR') ?? '—';
+    cards[1].textContent = d.total_comentarios?.toLocaleString('es-AR') ?? '—';
+    cards[2].textContent = d.total_analizados?.toLocaleString('es-AR') ?? '—';
+    cards[3].textContent = d.objetivos_activos ?? '—';
+  } catch(e) { console.error(e); }
+}
+
+async function cargarObjetivos() {
+  const r = await fetch(`${API}/api/objetivos`);
+  objetivos = await r.json();
+
+  const sidebar = document.getElementById('sidebar-objetivos');
+  const filtro = document.getElementById('filtro-objetivo');
+  filtro.innerHTML = '<option value="">Todos</option>';
+
+  sidebar.innerHTML = objetivos.map(o => `
+    <div class="sidebar-item ${o.activo ? 'active' : ''}" onclick="seleccionarObjetivo('${o.id}')">
+      <span class="dot ${o.activo ? 'verde' : 'gris'}"></span>
+      <span style="flex:1">${o.nombre}</span>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:.82rem;padding:.5rem">Sin objetivos</div>';
+
+  objetivos.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o.id; opt.textContent = o.nombre;
+    filtro.appendChild(opt);
+  });
+
+  renderHumorSocial();
+  cargarArticulos();
+}
+
+async function renderHumorSocial() {
+  const activos = objetivos.filter(o => o.activo);
+  const container = document.getElementById('humor-social-panels');
+  if (!activos.length) { container.innerHTML = '<div class="empty">Sin objetivos activos. Creá uno con el botón "+"</div>'; return; }
+
+  const panels = await Promise.all(activos.map(async o => {
+    try {
+      const r = await fetch(`${API}/api/humor-social/${o.id}?dias=7`);
+      const d = await r.json();
+      const s = d.sentimiento_global;
+      return `
+      <div class="card" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <div>
+            <div style="font-weight:600">${o.nombre}</div>
+            <div style="font-size:.78rem;color:var(--text3)">${o.tipo} · últimos 7 días · ${d.total_menciones} menciones</div>
+          </div>
+          <a href="/radiografia?id=${o.id}" class="btn btn-ghost btn-sm">Ver radiografía →</a>
+        </div>
+        <div class="sent-bar">
+          <div class="pos" style="width:${s.positivo}%"></div>
+          <div class="neg" style="width:${s.negativo}%"></div>
+          <div class="neu" style="width:${s.neutro}%"></div>
+        </div>
+        <div class="sent-labels">
+          <span><span class="dot verde" style="width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+            <span class="pos">Positivo ${s.positivo}%</span></span>
+          <span><span class="dot rojo" style="width:8px;height:8px;border-radius:50%;display:inline-block"></span>
+            <span class="neg">Negativo ${s.negativo}%</span></span>
+          <span>Neutro ${s.neutro}%</span>
+        </div>
+      </div>`;
+    } catch(e) { return ''; }
+  }));
+  container.innerHTML = panels.join('');
+}
+
+async function cargarArticulos() {
+  const filtro = document.getElementById('filtro-objetivo').value;
+  const tbody = document.getElementById('tabla-articulos');
+  tbody.innerHTML = '<tr><td colspan="5" class="empty"><div class="spinner" style="margin:auto"></div></td></tr>';
+
+  try {
+    const urls = filtro
+      ? [`${API}/api/humor-social/${filtro}/articulos-recientes?limite=50`]
+      : objetivos.filter(o=>o.activo).map(o => `${API}/api/humor-social/${o.id}/articulos-recientes?limite=20`);
+
+    const resultados = await Promise.all(urls.map(u => fetch(u).then(r=>r.json())));
+    const arts = resultados.flat().sort((a,b) => (b.fecha||'').localeCompare(a.fecha||''));
+
+    if (!arts.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Sin artículos. Ejecutá el scraper.</td></tr>'; return; }
+
+    const objMap = Object.fromEntries(objetivos.map(o=>[o.id, o.nombre]));
+    tbody.innerHTML = arts.slice(0,100).map(a => `
+      <tr>
+        <td style="white-space:nowrap;color:var(--text)">${a.objetivo_nombre||''}</td>
+        <td><span class="tag ${a.tipo==='youtube'?'tag-yt':'tag-rss'}">${a.fuente||''}</span></td>
+        <td><a href="${a.url||'#'}" target="_blank" style="color:var(--text2);text-decoration:none;line-height:1.4">${a.titulo||''}</a></td>
+        <td>${a.sentimiento ? `<span class="tag tag-${a.sentimiento.toLowerCase()=='pos'?'pos':a.sentimiento.toLowerCase()=='neg'?'neg':'neu'}">${a.sentimiento}</span>` : '—'}</td>
+        <td style="white-space:nowrap;font-size:.8rem">${(a.fecha||'').slice(0,10)}</td>
+      </tr>`).join('');
+  } catch(e) { tbody.innerHTML = `<tr><td colspan="5" class="empty">Error al cargar: ${e.message}</td></tr>`; }
+}
+
+function seleccionarObjetivo(id) {
+  document.getElementById('filtro-objetivo').value = id;
+  cargarArticulos();
+}
+
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+async function crearObjetivo() {
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const id     = document.getElementById('f-id').value.trim();
+  const tipo   = document.getElementById('f-tipo').value;
+  const kwRaw  = document.getElementById('f-kw').value;
+  const tw     = document.getElementById('f-tw').value.trim();
+  const ig     = document.getElementById('f-ig').value.trim();
+
+  if (!nombre || !id) return alert('Nombre e ID son obligatorios');
+
+  const kw = kwRaw.split(',').map(k=>k.trim()).filter(Boolean);
+  const redes = {};
+  if (tw) redes.twitter = tw;
+  if (ig) redes.instagram = ig;
+
+  try {
+    const r = await fetch(`${API}/api/objetivos`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ id, nombre, tipo, keywords: kw, redes, activo: true })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    closeModal();
+    await cargarObjetivos();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function triggerScraping() {
+  try {
+    await Promise.all([
+      fetch(`${API}/api/scraping/rss`, {method:'POST'}),
+      fetch(`${API}/api/scraping/youtube`, {method:'POST'}),
+    ]);
+    setTimeout(() => { fetch(`${API}/api/analizar`, {method:'POST'}); }, 3000);
+    alert('Scraping iniciado en background. Los datos se actualizarán en unos minutos.');
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+.env
+
+# Base de datos local
+*.db
+*.sqlite
+exports/
+
+# Logs
+logs/
+*.log
+
+# Configuración con secrets
+config/api_keys.json
+config/.env
+
+# Node (si se usa)
+node_modules/
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+*.lnk
+
+# IDE
+.vscode/
+.idea/
