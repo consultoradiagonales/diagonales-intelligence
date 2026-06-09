@@ -53,23 +53,22 @@ a { color:var(--blue); }
   <div class="grid">
     <aside class="panel">
       <h2>Consulta</h2>
-      <label>URL API</label>
-      <input id="apiBase" placeholder="https://tu-api.onrender.com">
       <label>Nombre completo / razon social</label>
-      <input id="nombre" placeholder="MARTINEZ GUSTAVO DANIEL">
+      <input id="nombre" placeholder="Opcional si ingresa DNI / CUIL / CUIT">
       <label>DNI / CUIL / CUIT</label>
-      <input id="identificador" placeholder="Opcional para BCRA y desambiguacion">
-      <label>Provincia</label>
-      <input id="provincia" placeholder="Ej: Buenos Aires">
+      <input id="identificador" placeholder="Ingrese DNI, CUIL o CUIT">
       <label>Tipo</label>
       <select id="tipo">
+        <option value="indistinto">Indistinto</option>
         <option value="persona">Persona</option>
         <option value="empresa">Empresa</option>
-        <option value="funcionario">Funcionario</option>
+        <option value="fundacion">Fundación</option>
+        <option value="mutual">Mutual</option>
+        <option value="asociacion">Asociación</option>
       </select>
       <button onclick="generarInforme()">Generar informe</button>
       <button class="secondary" onclick="exportarJSON()">Exportar JSON</button>
-      <p class="note">GitHub Pages no puede consultar bases externas por si solo. Esta pantalla llama a tu API, que hace BCRA y busquedas OSINT desde servidor.</p>
+      <p class="note">Ingrese nombre, DNI, CUIL o CUIT. El sistema consulta la API de Diagonales y arma el informe con evidencias.</p>
     </aside>
 
     <main class="panel">
@@ -103,27 +102,23 @@ const DEFAULT_API_BASE = 'https://diagonales-intelligence-api.onrender.com';
 const $ = id => document.getElementById(id);
 
 function apiRoot() {
-  const manual = $('apiBase').value.trim().replace(/\/$/, '');
-  if (manual) return manual;
   if (location.hostname.includes('github.io')) return DEFAULT_API_BASE;
   if (!location.hostname.includes('github.io') && location.origin.startsWith('http')) return location.origin;
-  return '';
+  return DEFAULT_API_BASE;
 }
 
 async function generarInforme() {
   const root = apiRoot();
-  if (!root) {
-    alert('Pegue la URL de la API desplegada. GitHub Pages solo muestra el frontend.');
-    return;
-  }
   $('metrics').innerHTML = metricHtml('-', '-', '-', 'consultando');
+  const nombre = $('nombre').value.trim();
+  const identificador = $('identificador').value.trim();
   const payload = {
-    nombre: $('nombre').value.trim(),
-    identificador: $('identificador').value.trim() || null,
-    provincia: $('provincia').value.trim() || null,
+    nombre: nombre || identificador,
+    identificador: identificador || null,
+    provincia: null,
     tipo: $('tipo').value
   };
-  if (!payload.nombre) { alert('Ingrese nombre o razon social'); return; }
+  if (!payload.nombre && !payload.identificador) { alert('Ingrese nombre, DNI, CUIL o CUIT'); return; }
   const res = await fetch(root + '/api/informe/comercial', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -196,7 +191,7 @@ function esc(v) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (location.hostname.includes('github.io')) $('apiBase').value = DEFAULT_API_BASE;
+  // API interna preconfigurada.
 });
 </script>
 </body>
