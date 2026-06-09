@@ -76,12 +76,13 @@ a { color:var(--blue); }
         <div class="metric"><span>Fuentes</span><strong>-</strong></div>
         <div class="metric"><span>Evidencias</span><strong>-</strong></div>
         <div class="metric"><span>Riesgo BCRA</span><strong>-</strong></div>
-        <div class="metric"><span>Estado</span><strong>sin informe</strong></div>
+        <div class="metric"><span>Confiabilidad</span><strong>-</strong></div>
       </div>
 
       <nav class="tabs">
         <button class="tab active" onclick="showView('resumen')">Resumen</button>
         <button class="tab" onclick="showView('grafo')">Grafo</button>
+        <button class="tab" onclick="showView('verificadas')">Verificadas</button>
         <button class="tab" onclick="showView('evidencias')">Evidencias</button>
         <button class="tab" onclick="showView('fuentes')">Fuentes</button>
         <button class="tab" onclick="showView('limitaciones')">Limitaciones</button>
@@ -89,6 +90,7 @@ a { color:var(--blue); }
 
       <section id="resumen" class="view active"><div class="card">Ingrese datos y genere el informe.</div></section>
       <section id="grafo" class="view"><svg id="graph"></svg></section>
+      <section id="verificadas" class="view"></section>
       <section id="evidencias" class="view"></section>
       <section id="fuentes" class="view"></section>
       <section id="limitaciones" class="view"></section>
@@ -133,17 +135,20 @@ function metricHtml(fuentes, evidencias, riesgo, estado) {
   return `<div class="metric"><span>Fuentes</span><strong>${fuentes}</strong></div>
   <div class="metric"><span>Evidencias</span><strong>${evidencias}</strong></div>
   <div class="metric"><span>Riesgo BCRA</span><strong>${riesgo}</strong></div>
-  <div class="metric"><span>Estado</span><strong>${estado}</strong></div>`;
+  <div class="metric"><span>Confiabilidad</span><strong>${estado}</strong></div>`;
 }
 
 function renderInforme() {
   const r = informe.resumen;
-  $('metrics').innerHTML = metricHtml(r.fuentes_consultadas, r.evidencias, r.riesgo_crediticio, 'completo');
+  $('metrics').innerHTML = metricHtml(r.fuentes_consultadas, r.evidencias, r.riesgo_crediticio, r.confiabilidad_global || 'media');
   $('resumen').innerHTML = `<div class="cards">${informe.hallazgos.map(h => `
     <div class="card"><h3>${esc(h.titulo)}</h3><span class="pill ${h.confianza}">${h.confianza}</span>
     <strong>${esc(h.valor)}</strong><p>${esc(h.detalle)}</p></div>`).join('')}</div>`;
   $('evidencias').innerHTML = table(['Fuente','Categoria','Confianza','Titulo','Extracto'], informe.evidencias.map(e => [
     e.fuente, e.categoria, `<span class="pill ${e.confianza}">${e.confianza}</span>`, `<a href="${e.url}" target="_blank">${esc(e.titulo)}</a>`, esc(e.extracto || '')
+  ]));
+  $('verificadas').innerHTML = table(['Fuente','Categoria','Score','Titulo','Razon'], (informe.evidencias_verificadas || []).map(e => [
+    e.fuente, e.categoria, e.score || '-', `<a href="${e.url}" target="_blank">${esc(e.titulo)}</a>`, esc(e.coincidencia || '')
   ]));
   $('fuentes').innerHTML = table(['Fuente','Categoria','Estado','Resultados'], informe.fuentes.map(f => [f.nombre, f.categoria, f.estado, f.resultados]));
   $('limitaciones').innerHTML = `<div class="cards">${informe.limitaciones.map(x => `<div class="card">${esc(x)}</div>`).join('')}</div>`;

@@ -277,6 +277,46 @@ SOURCE_CATALOG = [
     {"id": "ambito", "nombre": "Ambito", "categoria": "medios", "url": "https://www.ambito.com/"},
     {"id": "perfil", "nombre": "Perfil", "categoria": "medios", "url": "https://www.perfil.com/"},
     {"id": "cronista", "nombre": "El Cronista", "categoria": "medios", "url": "https://www.cronista.com/"},
+    {"id": "bo_buenos_aires", "nombre": "Boletin Oficial Buenos Aires", "categoria": "boletines_provinciales", "url": "https://boletinoficial.gba.gob.ar/"},
+    {"id": "dppj_buenos_aires", "nombre": "DPPJ Buenos Aires", "categoria": "sociedades", "url": "https://www.gba.gob.ar/dppj"},
+    {"id": "bo_caba", "nombre": "Boletin Oficial CABA", "categoria": "boletines_provinciales", "url": "https://boletinoficial.buenosaires.gob.ar/"},
+    {"id": "bo_cordoba", "nombre": "Boletin Oficial Cordoba", "categoria": "boletines_provinciales", "url": "https://boletinoficial.cba.gov.ar/"},
+    {"id": "ipj_cordoba", "nombre": "IPJ Cordoba", "categoria": "sociedades", "url": "https://ipj.cba.gov.ar/"},
+    {"id": "bo_santafe", "nombre": "Boletin Oficial Santa Fe", "categoria": "boletines_provinciales", "url": "https://www.santafe.gob.ar/boletinoficial/"},
+    {"id": "bo_mendoza", "nombre": "Boletin Oficial Mendoza", "categoria": "boletines_provinciales", "url": "https://boletinoficial.mendoza.gov.ar/"},
+    {"id": "dpj_mendoza", "nombre": "DPJ Mendoza", "categoria": "sociedades", "url": "https://atencionciudadana.mendoza.gob.ar/dpj/"},
+    {"id": "bo_tucuman", "nombre": "Boletin Oficial Tucuman", "categoria": "boletines_provinciales", "url": "https://boletin.tucuman.gov.ar/"},
+    {"id": "bo_salta", "nombre": "Boletin Oficial Salta", "categoria": "boletines_provinciales", "url": "https://boletinoficialsalta.gob.ar/"},
+    {"id": "pj_salta", "nombre": "Personas Juridicas Salta", "categoria": "sociedades", "url": "https://personasjuridicas.salta.gob.ar/"},
+    {"id": "bo_chaco", "nombre": "Boletin Oficial Chaco", "categoria": "boletines_provinciales", "url": "https://boletin.chaco.gob.ar/"},
+    {"id": "pj_chaco", "nombre": "Personas Juridicas Chaco", "categoria": "sociedades", "url": "https://personasjuridicas.chaco.gov.ar"},
+    {"id": "bo_misiones", "nombre": "Boletin Oficial Misiones", "categoria": "boletines_provinciales", "url": "https://www.boletin.misiones.gov.ar/"},
+    {"id": "pj_misiones", "nombre": "Personas Juridicas Misiones", "categoria": "sociedades", "url": "https://personasjuridicas.misiones.gob.ar/"},
+    {"id": "bo_corrientes", "nombre": "Boletin Oficial Corrientes", "categoria": "boletines_provinciales", "url": "https://boletinoficial.corrientes.gob.ar/"},
+    {"id": "bo_entrerios", "nombre": "Boletin Oficial Entre Rios", "categoria": "boletines_provinciales", "url": "https://www.entrerios.gov.ar/boletin/"},
+    {"id": "pj_entrerios", "nombre": "Personas Juridicas Entre Rios", "categoria": "sociedades", "url": "https://portal.entrerios.gov.ar/seguridadyjusticia/personasjuridicas/inicio"},
+    {"id": "bo_formosa", "nombre": "Boletin Oficial Formosa", "categoria": "boletines_provinciales", "url": "https://www.formosa.gob.ar/boletinoficial"},
+    {"id": "pj_formosa", "nombre": "Personas Juridicas Formosa", "categoria": "sociedades", "url": "https://www.formosa.gob.ar/personasjuridicas"},
+    {"id": "bo_jujuy", "nombre": "Boletin Oficial Jujuy", "categoria": "boletines_provinciales", "url": "https://boletinoficial.jujuy.gob.ar/"},
+    {"id": "bo_lapampa", "nombre": "Boletin Oficial La Pampa", "categoria": "boletines_provinciales", "url": "https://boletinoficial.lapampa.gob.ar/"},
+    {"id": "pj_lapampa", "nombre": "Personas Juridicas La Pampa", "categoria": "sociedades", "url": "https://dgpersonasjuridicas.lapampa.gob.ar/"},
+    {"id": "bo_larioja", "nombre": "Boletin Oficial La Rioja", "categoria": "boletines_provinciales", "url": "https://www.boletinoflarioja.com.ar/"},
+    {"id": "bo_neuquen", "nombre": "Boletin Oficial Neuquen", "categoria": "boletines_provinciales", "url": "https://boletinoficial.neuquen.gov.ar/"},
+    {"id": "pj_neuquen", "nombre": "Personas Juridicas Neuquen", "categoria": "sociedades", "url": "https://personasjuridicas.neuquen.gov.ar/"},
+    {"id": "bo_rionegro", "nombre": "Boletin Oficial Rio Negro", "categoria": "boletines_provinciales", "url": "https://boletinoficial.rionegro.gov.ar/"},
+    {"id": "pj_rionegro", "nombre": "Personas Juridicas Rio Negro", "categoria": "sociedades", "url": "https://personasjuridicas.rionegro.gov.ar/"},
+    {"id": "bo_sanjuan", "nombre": "Boletin Oficial San Juan", "categoria": "boletines_provinciales", "url": "https://boletinoficial.sanjuan.gob.ar/"},
+    {"id": "bo_sanluis", "nombre": "Boletin Oficial San Luis", "categoria": "boletines_provinciales", "url": "https://boletinoficial.sanluis.gov.ar/"},
+    {"id": "bo_santacruz", "nombre": "Boletin Oficial Santa Cruz", "categoria": "boletines_provinciales", "url": "https://boletinoficial.santacruz.gob.ar/"},
+    {"id": "bo_santiago", "nombre": "Boletin Oficial Santiago del Estero", "categoria": "boletines_provinciales", "url": "https://www.boletinsde.gov.ar/"},
+    {"id": "bo_tdf", "nombre": "Boletin Oficial Tierra del Fuego", "categoria": "boletines_provinciales", "url": "https://www.tierradelfuego.gob.ar/boletin-oficial/"},
+    {"id": "leg_caba", "nombre": "Legislatura CABA", "categoria": "legisladores", "url": "https://www.legislatura.gob.ar/posts/legisladores"},
+    {"id": "dip_pba", "nombre": "Diputados Buenos Aires", "categoria": "legisladores", "url": "https://www.hcdiputados-ba.gov.ar/"},
+    {"id": "sen_pba", "nombre": "Senado Buenos Aires", "categoria": "legisladores", "url": "https://www.senado-ba.gov.ar/"},
+    {"id": "leg_cordoba", "nombre": "Legislatura Cordoba", "categoria": "legisladores", "url": "https://legislaturacba.gob.ar/legisladores/"},
+    {"id": "youtube_tn", "nombre": "TN YouTube", "categoria": "medios_audiovisuales", "url": "https://www.youtube.com/@todonoticias"},
+    {"id": "youtube_c5n", "nombre": "C5N YouTube", "categoria": "medios_audiovisuales", "url": "https://www.youtube.com/@c5n"},
+    {"id": "youtube_destape", "nombre": "El Destape YouTube", "categoria": "medios_audiovisuales", "url": "https://www.youtube.com/@eldestapetv"},
 ]
 
 
@@ -342,7 +382,7 @@ def informe_comercial(req: InformeComercialRequest):
         }
         evidencias.append(evidencia)
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
+    with ThreadPoolExecutor(max_workers=12) as executor:
         futures = {
             executor.submit(_buscar_fuente, nombre, source, req.max_resultados_por_fuente): source
             for source in SOURCE_CATALOG
@@ -375,6 +415,11 @@ def informe_comercial(req: InformeComercialRequest):
         elif "bajo" in riesgos:
             riesgo_crediticio = "bajo"
 
+    verificadas = [e for e in evidencias if e.get("confianza") == "alta"]
+    indicios = [e for e in evidencias if e.get("confianza") in ("media", "baja")]
+    fuentes_con_hallazgos = len({e.get("fuente") for e in evidencias})
+    confiabilidad_global = _confiabilidad_global(evidencias, bool(cuiles))
+
     hallazgos.append({
         "titulo": "Identidad normalizada",
         "valor": (normalizado or {}).get("formateado") or "sin identificador",
@@ -390,8 +435,14 @@ def informe_comercial(req: InformeComercialRequest):
     hallazgos.append({
         "titulo": "Cobertura OSINT",
         "valor": f"{len(evidencias)} evidencias / {len(SOURCE_CATALOG)} fuentes",
-        "confianza": "media",
-        "detalle": "Fuentes abiertas consultadas via busqueda publica y API directa disponible.",
+        "confianza": confiabilidad_global,
+        "detalle": f"Fuentes con hallazgos: {fuentes_con_hallazgos}. Verificadas: {len(verificadas)}. Indicios: {len(indicios)}.",
+    })
+    hallazgos.append({
+        "titulo": "Confiabilidad integral",
+        "valor": confiabilidad_global,
+        "confianza": confiabilidad_global,
+        "detalle": "Alta requiere identificador oficial o coincidencias fuertes en varias fuentes independientes.",
     })
 
     grafo = _construir_grafo(nombre, evidencias, cuiles, categorias)
@@ -410,10 +461,16 @@ def informe_comercial(req: InformeComercialRequest):
             "evidencias": len(evidencias),
             "categorias": categorias,
             "riesgo_crediticio": riesgo_crediticio,
+            "fuentes_con_hallazgos": fuentes_con_hallazgos,
+            "evidencias_verificadas": len(verificadas),
+            "indicios": len(indicios),
+            "confiabilidad_global": confiabilidad_global,
         },
         "hallazgos": hallazgos,
         "fuentes": fuentes,
         "evidencias": evidencias,
+        "evidencias_verificadas": verificadas,
+        "indicios": indicios,
         "grafo": grafo,
         "limitaciones": [
             "ARCA, ANSES, SSSalud, SRT, IGJ y algunos registros pueden requerir captcha, login o consulta manual para datos completos.",
@@ -429,36 +486,100 @@ def _dominio(url: str) -> str:
 
 
 def _buscar_fuente(nombre: str, source: dict, limite: int) -> list[dict]:
-    query = f'site:{_dominio(source["url"])} "{nombre}"'
-    url = "https://duckduckgo.com/html/?q=" + quote_plus(query)
     evidencias = []
+    seen = set()
     try:
         headers = {"User-Agent": "Diagonales-Intelligence/1.0"}
-        r = httpx.get(url, headers=headers, timeout=8, follow_redirects=True)
-        if r.status_code >= 400:
-            return []
-        soup = BeautifulSoup(r.text, "html.parser")
-        for item in soup.select(".result")[:limite]:
-            title_el = item.select_one(".result__title a")
-            snippet_el = item.select_one(".result__snippet")
-            if not title_el:
+        for query in _queries_para_fuente(nombre, source):
+            url = "https://duckduckgo.com/html/?q=" + quote_plus(query)
+            r = httpx.get(url, headers=headers, timeout=8, follow_redirects=True)
+            if r.status_code >= 400:
                 continue
-            title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True))
-            href = title_el.get("href") or source["url"]
-            snippet = re.sub(r"\s+", " ", snippet_el.get_text(" ", strip=True)) if snippet_el else ""
-            confianza = "media" if nombre.lower() in (title + " " + snippet).lower() else "baja"
-            evidencias.append({
-                "fuente": source["nombre"],
-                "categoria": source["categoria"],
-                "url": href,
-                "titulo": title,
-                "extracto": snippet[:500],
-                "coincidencia": "nombre",
-                "confianza": confianza,
-            })
+            soup = BeautifulSoup(r.text, "html.parser")
+            for item in soup.select(".result")[:limite]:
+                title_el = item.select_one(".result__title a")
+                snippet_el = item.select_one(".result__snippet")
+                if not title_el:
+                    continue
+                title = re.sub(r"\s+", " ", title_el.get_text(" ", strip=True))
+                href = title_el.get("href") or source["url"]
+                if href in seen:
+                    continue
+                seen.add(href)
+                snippet = re.sub(r"\s+", " ", snippet_el.get_text(" ", strip=True)) if snippet_el else ""
+                confianza, score, razon = _score_evidencia(nombre, title, snippet, source, query)
+                evidencias.append({
+                    "fuente": source["nombre"],
+                    "categoria": source["categoria"],
+                    "url": href,
+                    "titulo": title,
+                    "extracto": snippet[:700],
+                    "coincidencia": razon,
+                    "confianza": confianza,
+                    "score": score,
+                    "query": query,
+                })
     except Exception:
         return []
-    return evidencias
+    evidencias.sort(key=lambda e: e.get("score", 0), reverse=True)
+    return evidencias[:limite]
+
+
+def _queries_para_fuente(nombre: str, source: dict) -> list[str]:
+    dominio = _dominio(source["url"])
+    q = f'"{nombre}"'
+    cat = source["categoria"]
+    terms = {
+        "sociedades": ["CUIT", "sociedad", "S.A.", "S.R.L.", "SAS", "gerente", "directorio", "constitucion", "edictos"],
+        "boletines_provinciales": ["boletin oficial", "edicto", "resolucion", "decreto", "licitacion", "sociedad"],
+        "judicial": ["causa", "expediente", "fallo", "sentencia", "procesado", "demandado"],
+        "licitaciones": ["licitacion", "contratacion", "adjudicacion", "proveedor", "orden de compra"],
+        "legisladores": ["diputado", "senador", "legislador", "bloque", "mandato"],
+        "medios": ["denuncia", "investigacion", "empresa", "funcionario", "causa", "licitacion"],
+        "medios_audiovisuales": ["entrevista", "denuncia", "informe", "politica", "economia"],
+        "crediticia": ["deudores", "cheques rechazados", "situacion crediticia"],
+        "fiscal": ["CUIT", "constancia", "actividad", "domicilio fiscal"],
+        "laboral": ["obra social", "empleador", "ART", "aportes"],
+    }.get(cat, ["Argentina"])
+    queries = [f"site:{dominio} {q}"]
+    queries.extend(f"site:{dominio} {q} {term}" for term in terms[:5])
+    return queries
+
+
+def _tokens(text: str) -> set[str]:
+    return {t for t in re.sub(r"[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]", " ", text).lower().split() if len(t) > 2}
+
+
+def _score_evidencia(nombre: str, title: str, snippet: str, source: dict, query: str) -> tuple[str, int, str]:
+    haystack = f"{title} {snippet}".lower()
+    nombre_tokens = _tokens(nombre)
+    hit_tokens = _tokens(haystack)
+    overlap = len(nombre_tokens & hit_tokens)
+    score = overlap * 18
+    if nombre.lower() in haystack:
+        score += 45
+    if source["categoria"] in ("sociedades", "crediticia", "judicial", "boletines_provinciales"):
+        score += 10
+    if any(term in haystack for term in ["cuit", "cuil", "dni", "boletin", "sociedad", "expediente", "deudor", "licitacion"]):
+        score += 12
+    if score >= 70:
+        return "alta", min(score, 100), "coincidencia fuerte en fuente prioritaria"
+    if score >= 35:
+        return "media", score, "coincidencia parcial o contextual"
+    return "baja", score, "indicio debil; requiere revision"
+
+
+def _confiabilidad_global(evidencias: list[dict], tiene_identificador: bool) -> str:
+    altas = [e for e in evidencias if e.get("confianza") == "alta"]
+    categorias_altas = {e.get("categoria") for e in altas}
+    fuentes_altas = {e.get("fuente") for e in altas}
+    if tiene_identificador and len(altas) >= 1:
+        return "alta"
+    if len(fuentes_altas) >= 3 and len(categorias_altas) >= 2:
+        return "alta"
+    if len(evidencias) >= 3:
+        return "media"
+    return "baja"
 
 
 def _construir_grafo(nombre: str, evidencias: list[dict], cuiles: list[str], categorias: dict) -> dict:
