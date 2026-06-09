@@ -99,11 +99,13 @@ a { color:var(--blue); }
 
 <script>
 let informe = null;
+const DEFAULT_API_BASE = 'https://diagonales-intelligence-api.onrender.com';
 const $ = id => document.getElementById(id);
 
 function apiRoot() {
   const manual = $('apiBase').value.trim().replace(/\/$/, '');
   if (manual) return manual;
+  if (location.hostname.includes('github.io')) return DEFAULT_API_BASE;
   if (!location.hostname.includes('github.io') && location.origin.startsWith('http')) return location.origin;
   return '';
 }
@@ -192,6 +194,10 @@ function exportarJSON() {
 function esc(v) {
   return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (location.hostname.includes('github.io')) $('apiBase').value = DEFAULT_API_BASE;
+});
 </script>
 </body>
 </html>

@@ -54,6 +54,15 @@ def startup():
     init_db()
 
 
+@app.get("/health")
+def health():
+    return {
+        "ok": True,
+        "service": "diagonales-intelligence",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+
 # ─── FRONTEND ─────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
